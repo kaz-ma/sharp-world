@@ -452,7 +452,14 @@ function drawField() {
 
 // ---------- メインループ ----------
 function resize() {
-  const vw = window.innerWidth, vh = window.innerHeight, a = vw / vh; let w = vw, h = vh;
+  const vw = window.innerWidth; let vh = window.innerHeight;
+  // ホーム画面のアプリ(横向き)で、iOSが「上のバー(約47)ぶんを ひいた たかさ」を かえしつづけることが ある。
+  // 画面そのものの たかさ(screen)より すこしだけ ひくいときは、画面ぜんたいを つかう。
+  const app = document.getElementById('app'); let fixed = false;
+  if (navigator.standalone && vw > vh) { const sh = Math.min(screen.width, screen.height), gap = sh - vh; if (gap > 8 && gap <= 70) { try { localStorage.setItem('mofu.vlog', JSON.stringify({ inner: vw + 'x' + vh, screen: screen.width + 'x' + screen.height, t: new Date().toISOString() })); } catch (e) {} vh = sh; fixed = true; } }
+  if (app._fixed !== fixed) { app._fixed = fixed; app.style.bottom = fixed ? 'auto' : ''; }
+  if (fixed) app.style.height = vh + 'px'; else if (app.style.height) app.style.height = '';
+  const a = vw / vh; let w = vw, h = vh;
   if (a < 16 / 9) h = Math.round(vw * 9 / 16); else if (a > 2.4) w = Math.round(vh * 2.4);
   const st = document.getElementById('stage'); if (st._w !== w || st._h !== h) { st.style.width = w + 'px'; st.style.height = h + 'px'; st._w = w; st._h = h; }
   VW = clamp(Math.round(H * w / h), 640, 864); OX = (VW - W) / 2;
@@ -467,7 +474,7 @@ if (/[?&]size/.test(location.search)) {
   const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99;background:rgba(0,0,0,.75);color:#fff;font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none';
   document.body.appendChild(box);
   const upd = () => { const v = window.visualViewport, st = document.getElementById('stage').getBoundingClientRect(), r = (k) => Math.round(pr[k].getBoundingClientRect().height);
-    box.textContent = `inner ${innerWidth}x${innerHeight}  outer ${outerWidth}x${outerHeight}\nclient ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}  screen ${screen.width}x${screen.height}\nvisual ${v ? Math.round(v.width) + 'x' + Math.round(v.height) + ' top' + Math.round(v.offsetTop) : '-'}\nfixed ${r('fixed')} vh ${r('vh')} lvh ${r('lvh')} svh ${r('svh')} dvh ${r('dvh')}\nsafe top ${r('top')} bottom ${r('bot')}\nstage ${Math.round(st.left)},${Math.round(st.top)} ${Math.round(st.width)}x${Math.round(st.height)}\nstandalone ${navigator.standalone} dpr ${devicePixelRatio}`; };
+    box.textContent = `inner ${innerWidth}x${innerHeight}  outer ${outerWidth}x${outerHeight}\nclient ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}  screen ${screen.width}x${screen.height}\nvisual ${v ? Math.round(v.width) + 'x' + Math.round(v.height) + ' top' + Math.round(v.offsetTop) : '-'}\nfixed ${r('fixed')} vh ${r('vh')} lvh ${r('lvh')} svh ${r('svh')} dvh ${r('dvh')}\nsafe top ${r('top')} bottom ${r('bot')}\nstage ${Math.round(st.left)},${Math.round(st.top)} ${Math.round(st.width)}x${Math.round(st.height)}\nstandalone ${navigator.standalone} dpr ${devicePixelRatio}\nfix-log ${(() => { try { return localStorage.getItem('mofu.vlog') || 'none'; } catch (e) { return '?'; } })()}`; };
   setInterval(upd, 500); upd();
 }
 function tick(dt) {
