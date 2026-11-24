@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>シャープワールド</title>
+<meta name="theme-color" content="#1e2b24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<link rel="stylesheet" href="style.css?v=mwulbk1n">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="シャープワールド">
+</head>
+<body>
+<div id="app">
+  <noscript><p style="color:#fff;padding:20px">このゲームは JavaScript が ひつようです。</p></noscript>
+  <div id="stage"><canvas id="c" width="640" height="360"></canvas></div>
+  <div id="touch"></div>
+  <div id="stick" class="hidden"><i></i></div>
+  <button id="btnM" type="button" aria-label="メニュー">メニュー</button>
+  <button id="btnB" type="button" aria-label="もどる・はしる">B</button>
+  <button id="btnA" type="button" aria-label="けってい">A</button>
+  <div id="xfer" class="hidden"><div class="xbox"><p id="xtitle"></p><textarea id="xta" rows="6" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea><div class="xrow"><button id="xcopy" type="button">コピー</button><button id="xok" type="button">よみこむ</button><button id="xclose" type="button">とじる</button></div><p id="xmsg"></p></div></div>
+  <div id="rotate"><div class="rot-card"><div class="phone"></div><p>スマホを<b>よこむき</b>にしてね</p></div></div>
+</div>
+<script src="data.js?v=mwulbk1n"></script>
+<script src="art.js?v=mwulbk1n"></script>
+<script src="audio.js?v=mwulbk1n"></script>
+<script src="core.js?v=mwulbk1n"></script>
+<script src="battle.js?v=mwulbk1n"></script>
+<script src="game.js?v=mwulbk1n"></script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
+</body>
+</html>
