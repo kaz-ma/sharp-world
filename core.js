@@ -460,6 +460,16 @@ function resize() {
   if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
 }
 addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 120));
+// ?size をつけて ひらくと、画面の はかりかたを ひだりうえに ひょうじ(しらべる ようの おまけ)
+if (/[?&]size/.test(location.search)) {
+  const probe = (css) => { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;' + css; document.body.appendChild(d); return d; };
+  const pr = { fixed: probe('height:100%'), vh: probe('height:100vh'), lvh: probe('height:100lvh'), svh: probe('height:100svh'), dvh: probe('height:100dvh'), top: probe('height:env(safe-area-inset-top)'), bot: probe('height:env(safe-area-inset-bottom)') };
+  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:4px;top:4px;z-index:99;background:rgba(0,0,0,.75);color:#fff;font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none';
+  document.body.appendChild(box);
+  const upd = () => { const v = window.visualViewport, st = document.getElementById('stage').getBoundingClientRect(), r = (k) => Math.round(pr[k].getBoundingClientRect().height);
+    box.textContent = `inner ${innerWidth}x${innerHeight}  outer ${outerWidth}x${outerHeight}\nclient ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}  screen ${screen.width}x${screen.height}\nvisual ${v ? Math.round(v.width) + 'x' + Math.round(v.height) + ' top' + Math.round(v.offsetTop) : '-'}\nfixed ${r('fixed')} vh ${r('vh')} lvh ${r('lvh')} svh ${r('svh')} dvh ${r('dvh')}\nsafe top ${r('top')} bottom ${r('bot')}\nstage ${Math.round(st.left)},${Math.round(st.top)} ${Math.round(st.width)}x${Math.round(st.height)}\nstandalone ${navigator.standalone} dpr ${devicePixelRatio}`; };
+  setInterval(upd, 500); upd();
+}
 function tick(dt) {
   clock += dt;
   if (mode === 'field') { S.time += dt; updateField(dt); const wt = warmth(); warmNow = warmNow == null ? wt : warmNow + (wt - warmNow) * Math.min(1, dt * 0.7); if (Math.floor(clock) !== Math.floor(clock - dt)) Aud.setWarm(warmNow); }

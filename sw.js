@@ -1,5 +1,5 @@
-const CACHE = 'sharp-world-mwulw5fx';
-const FILES = ["./","index.html","manifest.webmanifest","style.css?v=mwulw5fx","data.js?v=mwulw5fx","art.js?v=mwulw5fx","audio.js?v=mwulw5fx","core.js?v=mwulw5fx","battle.js?v=mwulw5fx","game.js?v=mwulw5fx","assets/hinatagaeru.webp","assets/hotaruusagi.webp","assets/kinokokko.webp","assets/mikanya.webp","assets/pukurisu.webp","assets/p_hero.webp","assets/p_hero_back.webp","assets/shizukufin.webp","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
+const CACHE = 'sharp-world-mwuogeah';
+const FILES = ["./","index.html","manifest.webmanifest","style.css?v=mwuogeah","data.js?v=mwuogeah","art.js?v=mwuogeah","audio.js?v=mwuogeah","core.js?v=mwuogeah","battle.js?v=mwuogeah","game.js?v=mwuogeah","assets/hinatagaeru.webp","assets/hotaruusagi.webp","assets/kinokokko.webp","assets/mikanya.webp","assets/pukurisu.webp","assets/p_hero.webp","assets/p_hero_back.webp","assets/shizukufin.webp","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
