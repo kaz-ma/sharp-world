@@ -3,15 +3,15 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
 html, body { margin: 0; height: 100%; background: #18211c; overflow: hidden; font-family: var(--font); overscroll-behavior: none; }
 #app { position: fixed; inset: 0; display: grid; place-items: center; background: #18211c; }
-#stage { width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9; max-height: 100dvh; position: relative; }
-#c { width: 100%; height: 100%; display: block; background: #bfe9ff; border-radius: 6px; touch-action: none; }
+#stage { width: 100%; height: 100%; position: relative; }
+#c { width: 100%; height: 100%; display: block; background: #bfe9ff; touch-action: none; }
 #touch { position: absolute; inset: 0; touch-action: none; z-index: 2; }
 #stick { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.35); z-index: 3; pointer-events: none; }
 #stick i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,.5); }
 #stick.hidden { display: none; }
 #btnA, #btnB, #btnM { position: absolute; z-index: 4; border: 2px solid rgba(255,255,255,.55); color: #fff; font-family: var(--font); font-weight: 900; background: rgba(217,115,91,.68); touch-action: none; cursor: pointer; }
-#btnA { right: max(18px, env(safe-area-inset-right)); bottom: max(26px, env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font-size: 26px; }
-#btnB { right: calc(max(18px, env(safe-area-inset-right)) + 82px); bottom: max(14px, env(safe-area-inset-bottom)); width: 54px; height: 54px; border-radius: 50%; font-size: 20px; background: rgba(106,168,150,.66); }
+#btnA { right: max(10px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font-size: 26px; line-height: 1.05; }
+#btnB { right: calc(max(10px, env(safe-area-inset-right)) + 80px); bottom: max(12px, env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%; font-size: 19px; line-height: 1.05; background: rgba(106,168,150,.66); }
 #btnM { right: max(14px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); height: 34px; padding: 0 14px; border-radius: 17px; font-size: 13px; background: rgba(60,50,45,.5); }
 #btnA:active, #btnB:active, #btnM:active, #btnA.on, #btnB.on { filter: brightness(1.25); transform: scale(.94); }
 #rotate { position: absolute; inset: 0; z-index: 20; display: none; place-items: center; background: #18211c; }
@@ -30,3 +30,5 @@ body.modal #btnA, body.modal #btnB, body.modal #btnM { display: none; }
 .xrow { display: flex; gap: 8px; margin: 8px 0 4px; }
 .xrow button { flex: 1; min-height: 40px; border: 2px solid #8d849a; background: #e8e2ee; color: #37323f; border-radius: 10px; font-family: var(--font); font-weight: 700; font-size: 15px; }
 #xmsg { min-height: 1.4em; font-size: 13px; color: #d9735b; }
+#btnA small, #btnB small { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0; opacity: .9; }
+#btnB.run { background: rgba(106,168,150,.95); outline: 3px solid rgba(255,255,255,.85); outline-offset: 1px; }

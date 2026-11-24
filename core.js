@@ -1,6 +1,7 @@
 'use strict';
 // 土台: 時計・入力・画面の部品(パネル/文字/会話/えらぶ)・フィールド(歩く、見える範囲の描画)
 const W = 640, H = 360, TS = 32;
+let VW = 640, OX = 0; // 画面の横の広さ(スマホが横長なら 640より広く)と、メニューなどを中央に置くための ずれ
 const cv = document.getElementById('c'), g = cv.getContext('2d');
 const FONT = '"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';
 const INK = '#37323f', MUTED = '#837d8c', PEACH = '#d9735b', MINT = '#6aa896', CREAM = '#f7f5f1', EDGE = '#8d849a';
@@ -33,7 +34,7 @@ function loadSave() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY))
 
 // ---------- 入力 ----------
 const dirStack = [];
-let padDir = null, runHeld = false;
+let padDir = null, runHeld = false, runToggle = false;
 const btnQ = []; let waiter = null;
 const dirHeld = () => padDir || dirStack[dirStack.length - 1] || null;
 function pushBtn(b) { if (waiter) { const w = waiter; waiter = null; w(b); } else { btnQ.push(b); if (btnQ.length > 4) btnQ.shift(); } }
@@ -68,7 +69,7 @@ addEventListener('blur', () => { dirStack.length = 0; padDir = null; runHeld = f
 
 const touch = document.getElementById('touch'), stickEl = document.getElementById('stick');
 let stick = null, repT = 0;
-function toLogical(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; }
+function toLogical(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * VW - OX, (e.clientY - r.top) / r.height * H]; }
 function stickDir(dx, dy) { if (Math.hypot(dx, dy) < 16) return null; return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'd' : 'u'); }
 touch.addEventListener('pointerdown', (e) => {
   Aud.start(); e.preventDefault();
@@ -89,10 +90,10 @@ touch.addEventListener('pointermove', (e) => {
 });
 const endStick = (e) => { if (stick && e.pointerId === stick.id) { stick = null; padDir = null; stickEl.classList.add('hidden'); } };
 touch.addEventListener('pointerup', endStick); touch.addEventListener('pointercancel', endStick);
-for (const [id, fn] of [['btnA', () => pushBtn('a')], ['btnB', () => { pushBtn('b'); runHeld = true; }], ['btnM', () => pushBtn('menu')]]) {
+for (const [id, fn] of [['btnA', () => pushBtn('a')], ['btnB', () => { pushBtn('b'); runToggle = !runToggle; document.getElementById('btnB').classList.toggle('run', runToggle); }], ['btnM', () => pushBtn('menu')]]) {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', (e) => { Aud.start(); e.preventDefault(); e.stopPropagation(); el.classList.add('on'); fn(); });
-  const up = () => { el.classList.remove('on'); if (id === 'btnB') runHeld = false; };
+  const up = () => { el.classList.remove('on'); };
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
 }
 
@@ -304,6 +305,7 @@ function sees(n, p) {
 }
 function onArrive() {
   const m = world.map, p = world.p; S.steps++; if (S.steps % 25 === 0) addBond(leadMon(), 1);
+  if (S.steps === 60 && !S.flags.tip_run) { S.flags.tip_run = true; bondEvents.push('ヒント: 「B」を おすと はしれるよ(もういちど おすと もどる)'); }
   if (m.grass && m.t[p.y][p.x] === 'g' && !S.flags.tip_grass) { S.flags.tip_grass = true; bondEvents.push('ヒント: 高い草むらでは、モンスターが とびだす ことが あるよ'); } Aud.sfx(m.t[p.y] && m.t[p.y][p.x] === 'g' ? 'rustle' : 'step');
   const w = m.warps.find((w) => w.x === p.x && w.y === p.y);
   if (w) { event(() => doWarp(w)); return; }
@@ -314,7 +316,7 @@ function onArrive() {
 }
 function stepOffsets(dt) {
   const ap = (v, s) => (v > 0 ? Math.max(0, v - s) : Math.min(0, v + s)), p = world.p;
-  const sp = dt / (runHeld ? STEP * 0.6 : STEP);
+  const sp = dt / ((runHeld || runToggle) ? STEP * 0.6 : STEP);
   p.ox = ap(p.ox, sp); p.oy = ap(p.oy, sp); world.fol.ox = ap(world.fol.ox, sp); world.fol.oy = ap(world.fol.oy, sp);
   for (const n of world.npcs) { const s2 = dt / STEP; n.ox = ap(n.ox, s2); n.oy = ap(n.oy, s2); }
 }
@@ -360,16 +362,16 @@ function drawGrid(m, cx, cy, x0, x1, y0, y1) { // ?debug 用: 歩けない所(�
 function drawField() {
   const m = world.map, p = world.p, T = clock;
   const pxw = (p.x + p.ox) * TS + 16, pyw = (p.y + p.oy) * TS + 16;
-  const camx = clamp(pxw - W / 2, 0, Math.max(0, m.w * TS - W)), camy = clamp(pyw - H / 2, 0, Math.max(0, m.h * TS - H));
+  const camx = clamp(pxw - VW / 2, 0, Math.max(0, m.w * TS - VW)), camy = clamp(pyw - H / 2, 0, Math.max(0, m.h * TS - H));
   const cx = Math.round(camx), cy = Math.round(camy);
-  const x0 = Math.max(0, Math.floor(cx / TS) - 1), x1 = Math.min(m.w - 1, Math.floor((cx + W) / TS) + 1);
+  const x0 = Math.max(0, Math.floor(cx / TS) - 1), x1 = Math.min(m.w - 1, Math.floor((cx + VW) / TS) + 1);
   const y0 = Math.max(0, Math.floor(cy / TS) - 1), y1 = Math.min(m.h - 1, Math.floor((cy + H) / TS) + 3);
   const bg = m.bg ? Art.bg(m.bg) : null;
-  g.fillStyle = '#9bd278'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#9bd278'; g.fillRect(0, 0, VW, H);
   if (bg) g.drawImage(bg, 0, 0, bg.width, bg.height, -cx, -cy, m.w * TS, m.h * TS);
   else { // 地面は一度だけ描いて使い回す。ゆれる草と水だけ、毎回描く
     const cc = mapCache(m), K = m._cacheK, gl = [];
-    g.drawImage(cc, cx * K, cy * K, Math.min(W * K, cc.width - cx * K), Math.min(H * K, cc.height - cy * K), 0, 0, Math.min(W, cc.width / K - cx), Math.min(H, cc.height / K - cy));
+    g.drawImage(cc, cx * K, cy * K, Math.min(VW * K, cc.width - cx * K), Math.min(H * K, cc.height - cy * K), 0, 0, Math.min(VW, cc.width / K - cx), Math.min(H, cc.height / K - cy));
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const c = m.t[ty][tx]; if (c === 'g') gl.push({ px: tx * TS - cx, py: ty * TS - cy, h: Art.hash(tx, ty) }); else if (c === '~') Art.tile(g, '~', tx, ty, tx * TS - cx, ty * TS - cy, T, m); }
     Art.grassBatch(g, gl, T);
   }
@@ -421,8 +423,8 @@ function drawField() {
   }
   if (m.fog && gradeLevel >= 1) { // 霧: 灯がともるとうすくなる
     const fa = m.fog * (S.flags['lit_' + m.id] ? 0.3 : 1);
-    g.save(); for (let i = 0; i < (gradeLevel >= 2 ? 6 : 2); i++) { const fx = ((i * 330 + clock * (9 + i * 3)) % (W + 500)) - 250, fy = 60 + (i * 61) % 300, rr2 = 190 + (i % 3) * 40; const fg = g.createRadialGradient(fx, fy, 10, fx, fy, rr2); fg.addColorStop(0, `rgba(232,238,242,${fa * 0.55})`); fg.addColorStop(1, 'rgba(232,238,242,0)'); g.fillStyle = fg; g.fillRect(fx - rr2, fy - rr2, rr2 * 2, rr2 * 2); }
-    g.fillStyle = `rgba(226,233,238,${fa * 0.18})`; g.fillRect(0, 0, W, H); g.restore();
+    g.save(); for (let i = 0; i < (gradeLevel >= 2 ? 6 : 2); i++) { const fx = ((i * 330 + clock * (9 + i * 3)) % (VW + 500)) - 250, fy = 60 + (i * 61) % 300, rr2 = 190 + (i % 3) * 40; const fg = g.createRadialGradient(fx, fy, 10, fx, fy, rr2); fg.addColorStop(0, `rgba(232,238,242,${fa * 0.55})`); fg.addColorStop(1, 'rgba(232,238,242,0)'); g.fillStyle = fg; g.fillRect(fx - rr2, fy - rr2, rr2 * 2, rr2 * 2); }
+    g.fillStyle = `rgba(226,233,238,${fa * 0.18})`; g.fillRect(0, 0, VW, H); g.restore();
   }
   if (world.fishing) { // つり: 糸とうき
     const f = world.fishing, hx = (p.x + p.ox) * TS + 16 - cx + (p.dir === 'l' ? -8 : p.dir === 'r' ? 8 : 0), hy = (p.y + p.oy) * TS + TS - 26 - cy, tx = f.tx * TS + 16 - cx, ty = f.ty * TS + 18 - cy;
@@ -431,7 +433,7 @@ function drawField() {
     for (let i = 0; i < (bite ? 3 : 1); i++) { const k = ((clock * (bite ? 2.4 : 0.8) + i * 0.33) % 1); g.strokeStyle = `rgba(235,245,250,${(1 - k) * 0.8})`; g.lineWidth = 2; g.beginPath(); g.ellipse(tx, ty + 4, 6 + k * 18, (6 + k * 18) * 0.38, 0, 0, 7); g.stroke(); }
     g.fillStyle = '#fff'; g.beginPath(); g.arc(ex, ey, 4.4, 0, 7); g.fill(); g.fillStyle = '#e0574a'; g.beginPath(); g.arc(ex, ey - 1.6, 4.4, Math.PI, 0); g.fill(); g.strokeStyle = 'rgba(40,36,50,.7)'; g.lineWidth = 1.2; g.beginPath(); g.arc(ex, ey, 4.4, 0, 7); g.stroke();
     if (bite) { g.fillStyle = '#fff'; g.beginPath(); g.arc(hx, hy - 30, 11, 0, 7); g.fill(); g.strokeStyle = '#ff7a5e'; g.lineWidth = 2.5; g.stroke(); txt('!', hx, hy - 29, { align: 'center', size: 17, color: '#ff5a3e', w: 900 }); }
-    else txt('うきを みつめて…(Aで ひく)', W / 2, 330, { align: 'center', size: 13, color: '#fff', stroke: 'rgba(40,36,50,.7)', sw: 4 });
+    else txt('うきを みつめて…(Aで ひく)', VW / 2, 330, { align: 'center', size: 13, color: '#fff', stroke: 'rgba(40,36,50,.7)', sw: 4 });
     g.restore();
   }
   if (showGrid) drawGrid(m, cx, cy, x0, x1, y0, y1);
@@ -439,21 +441,25 @@ function drawField() {
   g.fillStyle = 'rgba(20,70,40,.07)';
   const span = m.w * TS + 500;
   if (!bg) for (const c of CLOUDS) { const x = ((c.x + T * c.v) % span) - 200 - cx * 0.9, y = (c.y % (m.h * TS)) - cy * 0.9; g.beginPath(); g.ellipse(x, y, c.r * 1.7, c.r, 0, 0, 7); g.ellipse(x + c.r, y + 8, c.r * 1.3, c.r * 0.8, 0, 0, 7); g.fill(); }
-  const vg = g.createRadialGradient(W / 2, H / 2, H * 0.55, W / 2, H / 2, H * 1.05); vg.addColorStop(0, 'rgba(0,30,10,0)'); vg.addColorStop(1, 'rgba(0,30,10,.22)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  const vg = g.createRadialGradient(VW / 2, H / 2, H * 0.55, VW / 2, H / 2, H * 1.05); vg.addColorStop(0, 'rgba(0,30,10,0)'); vg.addColorStop(1, 'rgba(0,30,10,.22)'); g.fillStyle = vg; g.fillRect(0, 0, VW, H);
   if (world.bang && clock - world.bang.t0 < 0.9) { const b = world.bang, k = Math.min(1, (clock - b.t0) * 8), x = b.x * TS + 16 - cx, y = b.y * TS - 26 - cy - Math.sin(k * 3.14) * 6; g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, 11, 0, 7); g.fill(); g.strokeStyle = '#ff7a5e'; g.lineWidth = 2.5; g.stroke(); txt('!', x, y + 1, { align: 'center', size: 17, color: '#ff5a3e', w: 900 }); }
   if (world.emote && clock - world.emote.t0 < 1.5) {
     const k = (clock - world.emote.t0) / 1.5, f = world.fol, ex = (f.x + f.ox) * TS + 16 - cx, ey = (f.y + f.oy) * TS - 22 - cy;
     for (let i = 0; i < 3; i++) { const kk = clamp(k * 1.4 - i * 0.18, 0, 1); if (kk <= 0 || kk >= 1) continue; g.globalAlpha = 1 - kk * kk; heart(ex + (i - 1) * 10 + Math.sin(kk * 6 + i) * 3, ey - kk * 26, 5 + (i === 1 ? 2 : 0), i === 1 ? '#ff7f9f' : '#ffa9bf'); g.globalAlpha = 1; }
   }
-  if (ui.banner) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(W / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, W / 2, y + 17, { align: 'center', size: 16 }); } else ui.banner = null; }
+  if (ui.banner) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(VW / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, VW / 2, y + 17, { align: 'center', size: 16 }); } else ui.banner = null; }
 }
 
 // ---------- メインループ ----------
 function resize() {
-  const r = document.getElementById('stage').getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3), w = Math.max(320, Math.round(r.width * dpr));
-  if (cv.width !== w) { cv.width = w; cv.height = Math.round(w * 9 / 16); }
+  const vw = window.innerWidth, vh = window.innerHeight, a = vw / vh; let w = vw, h = vh;
+  if (a < 16 / 9) h = Math.round(vw * 9 / 16); else if (a > 2.4) w = Math.round(vh * 2.4);
+  const st = document.getElementById('stage'); if (st._w !== w || st._h !== h) { st.style.width = w + 'px'; st.style.height = h + 'px'; st._w = w; st._h = h; }
+  VW = clamp(Math.round(H * w / h), 640, 864); OX = (VW - W) / 2;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3), cw = Math.max(320, Math.round(w * dpr)), ch = Math.max(180, Math.round(h * dpr));
+  if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; }
 }
-addEventListener('resize', resize);
+addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 120));
 function tick(dt) {
   clock += dt;
   if (mode === 'field') { S.time += dt; updateField(dt); const wt = warmth(); warmNow = warmNow == null ? wt : warmNow + (wt - warmNow) * Math.min(1, dt * 0.7); if (Math.floor(clock) !== Math.floor(clock - dt)) Aud.setWarm(warmNow); }
@@ -463,7 +469,7 @@ function tick(dt) {
   render();
 }
 // ---------- 画面全体の色の調子(90年代セルアニメ風): 青灰色の空気+夕方のあたたかい光+フィルムの粒子 ----------
-const GRAIN = (() => { const c = document.createElement('canvas'); c.width = 832; c.height = 552; const x = c.getContext('2d'), d = x.createImageData(832, 552); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return c; })();
+const GRAIN = (() => { const c = document.createElement('canvas'); c.width = 1056; c.height = 552; const x = c.getContext('2d'), d = x.createImageData(1056, 552); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return c; })();
 let gradeLevel = 2, manualGrade = false; // 2 ふつう / 1 かるい(色合いだけ) / 0 なし
 let gradeOn = true, gOx = 0, gOy = 0, gT = 0, warmDbg = null;
 // 旅が進むほど世界があたたかくなる: 0(青灰色のしずかな空気)→1(金色のやわらかい光)。いまはずかんとライバル戦の進み具合から決める
@@ -476,26 +482,40 @@ function grade() {
   const w = warmNow ?? 0;
   g.save();
   g.globalCompositeOperation = 'multiply';
-  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, mixc('#d3dfe6', '#f8ead2', w)); gr.addColorStop(0.55, mixc('#f0ebe4', '#fcf2de', w)); gr.addColorStop(1, mixc('#f6e2c8', '#ffe2b4', w)); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, mixc('#d3dfe6', '#f8ead2', w)); gr.addColorStop(0.55, mixc('#f0ebe4', '#fcf2de', w)); gr.addColorStop(1, mixc('#f6e2c8', '#ffe2b4', w)); g.fillStyle = gr; g.fillRect(0, 0, VW, H);
   if (gradeLevel < 2) { g.restore(); return; }
   g.globalCompositeOperation = 'screen';
-  const rg = g.createRadialGradient(W * 0.86, -30, 10, W * 0.86, -30, H * 1.15); rg.addColorStop(0, `rgba(255,178,120,${lerp(0.3, 0.5, w)})`); rg.addColorStop(1, 'rgba(255,178,120,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  const rg = g.createRadialGradient(VW * 0.86, -30, 10, VW * 0.86, -30, H * 1.15); rg.addColorStop(0, `rgba(255,178,120,${lerp(0.3, 0.5, w)})`); rg.addColorStop(1, 'rgba(255,178,120,0)'); g.fillStyle = rg; g.fillRect(0, 0, VW, H);
   g.globalCompositeOperation = 'overlay'; g.globalAlpha = lerp(0.09, 0.06, w);
   if (clock - gT > 0.07) { gT = clock; gOx = -Math.floor(Math.random() * 190); gOy = -Math.floor(Math.random() * 190); }
   g.drawImage(GRAIN, gOx, gOy);
   g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-  const vg = g.createRadialGradient(W / 2, H / 2, H * 0.5, W / 2, H / 2, H * 1.0); vg.addColorStop(0, 'rgba(30,20,50,0)'); vg.addColorStop(1, `rgba(30,20,50,${lerp(0.2, 0.12, w)})`); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  const vg = g.createRadialGradient(VW / 2, H / 2, H * 0.5, VW / 2, H / 2, H * 1.0); vg.addColorStop(0, 'rgba(30,20,50,0)'); vg.addColorStop(1, `rgba(30,20,50,${lerp(0.2, 0.12, w)})`); g.fillStyle = vg; g.fillRect(0, 0, VW, H);
+  g.restore();
+}
+// 戦闘・タイトルなどは 640幅の絵を中央に置き、左右は端の1列を のばして うめる
+const smearC = document.createElement('canvas'), smearG = smearC.getContext('2d');
+function smearEdges() {
+  if (OX <= 0) return; const px = Math.round(OX * cv.width / VW), w = cv.width, h = cv.height, k = Math.max(4, Math.round(px * 0.25));
+  if (smearC.height !== h) { smearC.width = 1; smearC.height = h; }
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  smearG.imageSmoothingQuality = 'high'; // 端から少し内がわの帯を、1列にならして のばす(小さな星などが筋にならない)
+  smearG.clearRect(0, 0, 1, h); smearG.drawImage(cv, px + 2, 0, k, h, 0, 0, 1, h); g.drawImage(smearC, 0, 0, 1, h, 0, 0, px, h);
+  smearG.clearRect(0, 0, 1, h); smearG.drawImage(cv, w - px - 2 - k, 0, k, h, 0, 0, 1, h); g.drawImage(smearC, 0, 0, 1, h, w - px, 0, px, h);
   g.restore();
 }
 function render() {
-  resize(); g.setTransform(cv.width / W, 0, 0, cv.width / W, 0, 0); g.imageSmoothingQuality = 'high'; ui.hits.length = 0;
+  resize(); g.setTransform(cv.width / VW, 0, 0, cv.height / H, 0, 0); g.imageSmoothingQuality = 'high'; ui.hits.length = 0;
   g.save(); if (ui.shake > 0.3) { g.translate(rnd(-ui.shake, ui.shake), rnd(-ui.shake, ui.shake)); ui.shake *= 0.84; } else ui.shake = 0;
-  if (mode === 'title') drawTitle(); else if (mode === 'battle') drawBattle(); else if (mode === 'ending') drawEnding(); else drawField();
+  if (mode === 'field') drawField();
+  else { g.save(); g.translate(OX, 0); if (mode === 'title') drawTitle(); else if (mode === 'battle') drawBattle(); else if (mode === 'ending') drawEnding(); g.restore(); g.restore(); smearEdges(); g.save(); }
   g.restore();
   if (gradeOn && mode !== 'ending') grade();
+  g.save(); g.translate(OX, 0);
   if (ui.overlay) ui.overlay();
   drawDialog(); drawNameTag(); drawChoice();
-  if (ui.flash > 0) { g.fillStyle = `rgba(255,255,255,${ui.flash})`; g.fillRect(0, 0, W, H); }
-  if (ui.wipe > 0) { g.fillStyle = '#1b1722'; const n = 12, bh = H / n; for (let i = 0; i < n; i++) { const w = Math.min(1, ui.wipe * 1.6 - (i % 6) * 0.1) * W; if (w > 0) g.fillRect(i % 2 ? W - w : 0, i * bh, w, bh + 1); } }
-  if (ui.fade > 0) { g.globalAlpha = ui.fade; g.fillStyle = ui.fadeC; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+  g.restore();
+  if (ui.flash > 0) { g.fillStyle = `rgba(255,255,255,${ui.flash})`; g.fillRect(0, 0, VW, H); }
+  if (ui.wipe > 0) { g.fillStyle = '#1b1722'; const n = 12, bh = H / n; for (let i = 0; i < n; i++) { const w = Math.min(1, ui.wipe * 1.6 - (i % 6) * 0.1) * VW; if (w > 0) g.fillRect(i % 2 ? VW - w : 0, i * bh, w, bh + 1); } }
+  if (ui.fade > 0) { g.globalAlpha = ui.fade; g.fillStyle = ui.fadeC; g.fillRect(0, 0, VW, H); g.globalAlpha = 1; }
 }
