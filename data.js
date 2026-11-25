@@ -121,6 +121,7 @@ for (const k in AB_OF) SPECIES[k].ab = AB_OF[k];
 const SPECIES_ORDER = ['mikanya', 'pukurisu', 'hinatagaeru', 'hotaruusagi', 'kinokokko', 'shizukufin', 'birisuzume', 'hanedoron', 'hikaritanishi', 'sabikani', 'kirikamome', 'funenko', 'yuuhineko', 'fukufukurisu', 'himoriusagi', 'hinatagama'];
 
 const ITEMS = {
+  map: { n: 'ちず', d: '世界ぜんたいと、いま いる 場所が わかる。旅の はじめから もっている。', key: true },
   ball: { n: 'あつめボール', d: 'やせいの モンスターを つかまえる。', price: 120 },
   potion: { n: 'きずぐすり', d: 'HPを 30 かいふくする。', heal: 30, price: 100 },
   cure: { n: 'なんでもなおし', d: 'ねむり・やけど・まひを なおす。', price: 80 },

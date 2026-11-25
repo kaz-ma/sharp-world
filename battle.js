@@ -559,6 +559,12 @@ async function partyScreen(o = {}) {
   });
 }
 function itemIcon(id, cx, cy, s) {
+  if (id === 'map') { // 折りたたんだ 紙の 地図
+    const w = s * 0.92, h = s * 0.68, x = cx - w / 2, y = cy - h / 2, d = h * 0.14;
+    for (let i = 0; i < 3; i++) { const a = x + (w / 3) * i, b = a + w / 3, t = i % 2 ? y : y + d, u = i % 2 ? y + d : y; g.fillStyle = i % 2 ? '#d9c9a0' : '#efe2c0'; g.beginPath(); g.moveTo(a, t); g.lineTo(b, u); g.lineTo(b, u + h - d); g.lineTo(a, t + h - d); g.closePath(); g.fill(); g.strokeStyle = '#6a5440'; g.lineWidth = Math.max(1, s * 0.025); g.stroke(); }
+    g.strokeStyle = '#6f8f66'; g.lineWidth = Math.max(1.2, s * 0.05); g.beginPath(); g.moveTo(x + w * 0.12, cy + h * 0.18); g.quadraticCurveTo(cx - w * 0.1, cy - h * 0.3, cx + w * 0.08, cy + h * 0.06); g.quadraticCurveTo(cx + w * 0.22, cy + h * 0.24, x + w * 0.82, cy - h * 0.14); g.stroke();
+    g.fillStyle = '#c25a62'; g.beginPath(); g.arc(x + w * 0.82, cy - h * 0.16, s * 0.08, 0, 7); g.fill(); return;
+  }
   if (id === 'ball') { Art.ball(g, cx, cy, s * 0.5, id === 'ball' && s > 40 ? clock * 0.5 : 0); return; }
   const col = id === 'cure' ? ['#8fd6c8', '#4fb3a0'] : ['#e8a0b8', '#c96f8f'];
   g.fillStyle = col[0]; rr(cx - s * 0.32, cy - s * 0.2, s * 0.64, s * 0.7, s * 0.16); g.fill();
@@ -566,13 +572,14 @@ function itemIcon(id, cx, cy, s) {
   g.fillStyle = col[1]; g.fillRect(cx - s * 0.06, cy - s * 0.02, s * 0.12, s * 0.38); g.fillRect(cx - s * 0.2, cy + s * 0.11, s * 0.4, s * 0.12);
 }
 async function bagScreen(o = {}) {
-  const ids = ['ball', 'potion', 'cure'];
+  const ids = o.battle ? ['ball', 'potion', 'cure'] : ['map', 'ball', 'potion', 'cure']; // ちずは ずっと もっている 大事なもの
   return listScreen({
     title: 'バッグ', n: ids.length, rowH: 50,
-    rowFn: (i, x, y, w) => { const id = ids[i]; itemIcon(id, x + 26, y + 22, 30); txt(ITEMS[id].n, x + 52, y + 21, { size: 15 }); txt('× ' + (S.bag[id] || 0), x + w - 12, y + 21, { size: 15, align: 'right' }); },
-    detailFn: (i, x, y, w) => { const id = ids[i]; itemIcon(id, x + w / 2, y + 90, 92); txt(ITEMS[id].n, x + w / 2, y + 170, { size: 19, align: 'center' }); wrap(ITEMS[id].d, w - 20, 15).forEach((l, k) => txt(l, x + w / 2, y + 204 + k * 24, { size: 15, align: 'center', color: MUTED })); },
+    rowFn: (i, x, y, w) => { const id = ids[i]; itemIcon(id, x + 26, y + 22, 30); txt(ITEMS[id].n, x + 52, y + 21, { size: 15 }); txt(ITEMS[id].key ? 'だいじなもの' : '× ' + (S.bag[id] || 0), x + w - 12, y + 21, { size: ITEMS[id].key ? 11 : 15, align: 'right', color: ITEMS[id].key ? ACCENT : INK }); },
+    detailFn: (i, x, y, w) => { const id = ids[i]; itemIcon(id, x + w / 2, y + 90, 92); txt(ITEMS[id].n, x + w / 2, y + 170, { size: 19, align: 'center' }); wrap(ITEMS[id].d, w - 20, 15).forEach((l, k) => txt(l, x + w / 2, y + 204 + k * 24, { size: 15, align: 'center', color: MUTED })); if (id === 'map') { panel(x + w / 2 - 70, y + 270, 140, 34, { r: 7, fill: '#2c2540', stroke: '#f0dcc0', plain: true }); txt('ちずを ひらく', x + w / 2, y + 287.5, { size: 15, align: 'center', color: '#fff6e6' }); ui.hits.push({ x: x + w / 2 - 74, y: y + 266, w: 148, h: 42, act: () => pushBtn('a') }); } },
     onA: async (i) => {
       const id = ids[i];
+      if (id === 'map') { await mapScreen(); flushBtn(); return undefined; }
       if ((S.bag[id] || 0) <= 0) { Aud.sfx('back'); await say('もう のこっていないよ!'); return undefined; }
       if (id === 'ball' && !o.battle) { Aud.sfx('back'); await say('ここでは つかえないよ。草むらで モンスターに なげよう!'); return undefined; }
       if (id === 'cure' && !o.battle) { Aud.sfx('back'); await say('いまは つかう ひつようが ないよ。'); return undefined; }

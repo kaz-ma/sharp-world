@@ -9,11 +9,12 @@ html, body { margin: 0; height: 100%; background: #18211c; overflow: hidden; fon
 #stick { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.35); z-index: 3; pointer-events: none; }
 #stick i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(255,255,255,.5); }
 #stick.hidden { display: none; }
-#btnA, #btnB, #btnM { position: absolute; z-index: 4; border: 2px solid rgba(247,232,208,.8); color: #fff8ea; font-family: var(--font); font-weight: 900; background: rgba(168,70,82,.72); box-shadow: 0 0 0 2px rgba(34,27,54,.55), inset 0 0 0 3px rgba(34,27,54,.28), 0 3px 10px rgba(16,10,30,.35); text-shadow: 0 1px 2px rgba(24,16,40,.6); touch-action: none; cursor: pointer; }
+#btnA, #btnB, #btnM, #btnMap { position: absolute; z-index: 4; border: 2px solid rgba(247,232,208,.8); color: #fff8ea; font-family: var(--font); font-weight: 900; background: rgba(168,70,82,.72); box-shadow: 0 0 0 2px rgba(34,27,54,.55), inset 0 0 0 3px rgba(34,27,54,.28), 0 3px 10px rgba(16,10,30,.35); text-shadow: 0 1px 2px rgba(24,16,40,.6); touch-action: none; cursor: pointer; }
 #btnA { right: max(10px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font-size: 26px; line-height: 1.05; }
 #btnB { right: calc(max(10px, env(safe-area-inset-right)) + 80px); bottom: max(12px, env(safe-area-inset-bottom)); width: 58px; height: 58px; border-radius: 50%; font-size: 19px; line-height: 1.05; background: rgba(66,60,104,.74); }
 #btnM { right: max(14px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); height: 34px; padding: 0 14px; border-radius: 8px; font-size: 13px; background: rgba(34,27,54,.68); }
-#btnA:active, #btnB:active, #btnM:active, #btnA.on, #btnB.on { filter: brightness(1.25); transform: scale(.94); }
+#btnMap { right: calc(max(14px, env(safe-area-inset-right)) + 90px); top: max(10px, env(safe-area-inset-top)); height: 34px; padding: 0 16px; border-radius: 8px; font-size: 13px; background: rgba(34,27,54,.68); }
+#btnA:active, #btnB:active, #btnM:active, #btnMap:active, #btnMap.on, #btnA.on, #btnB.on { filter: brightness(1.25); transform: scale(.94); }
 #rotate { position: absolute; inset: 0; z-index: 20; display: none; place-items: center; background: #18211c; }
 .rot-card { text-align: center; color: #fdf5e8; font-size: 18px; line-height: 1.8; }
 .rot-card b { color: #d9a08e; }
@@ -21,7 +22,7 @@ html, body { margin: 0; height: 100%; background: #18211c; overflow: hidden; fon
 @keyframes rot { 0%, 25% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
 @media (orientation: portrait) { #rotate { display: grid; } }
 @media (prefers-reduced-motion: reduce) { .phone { animation: none; } }
-body.modal #btnA, body.modal #btnB, body.modal #btnM { display: none; }
+body.modal #btnA, body.modal #btnB, body.modal #btnM, body.modal #btnMap { display: none; }
 #xfer { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(24,20,34,.72); padding: 12px; }
 #xfer.hidden { display: none; }
 .xbox { width: min(560px, 100%); background: linear-gradient(#fdf9f1, #eee6d9); color: #37323f; border: 2px solid #3d3550; box-shadow: inset 0 0 0 4px #f6efe2, inset 0 0 0 5px rgba(150,118,92,.5); border-radius: 10px; padding: 12px 14px; font-family: var(--font); }

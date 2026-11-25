@@ -568,12 +568,14 @@ async function newGame() {
     clearSpeaker(); Aud.sfx('caught'); await cutin(Art.sprites.mikanya, SPECIES.mikanya.n, SPECIES.mikanya.dex); // 大きく 紹介
     S.dexShown = { ...(S.dexShown || {}), mikanya: true };
     await say('ミカニャを なかまに した!');
-    await sayAll(['しっぽの はっぱが じまんの、ひなたぼっこ だいすきな 子じゃ。なかよく してやっておくれ。', 'まずは 東の ひなた草原へ いってみなさい。\n草むらでは、とつぜん モンスターが とびだすぞ!', 'Aで はなす・けってい、Bで もどる・ダッシュ。\nメニューで ずかんや バッグを ひらけるぞ。']);
+    await sayAll(['しっぽの はっぱが じまんの、ひなたぼっこ だいすきな 子じゃ。なかよく してやっておくれ。', 'まずは 東の ひなた草原へ いってみなさい。\n草むらでは、とつぜん モンスターが とびだすぞ!', 'Aで はなす・けってい、Bで もどる・ダッシュ。\nメニューで ずかんや バッグを ひらけるぞ。', '旅の ちずは もったな?\n右上の「ちず」か、バッグから いつでも 見られるぞ。']);
+    S.flags.tip_map = true;
     await sayAll(['そうじゃ。旅の とちゅうで、町の あかりを 見かけたら、\n気に かけて やって おくれ。', 'いつか 山の ほうへ 行くことが あったら…\nいや、その 話は、また こんどに しよう。']);
     ui.banner = { text: world.map.name, t0: clock }; bondEvents.push('めやす: 東の「ひなた草原」へ(メニューの めやす でも みられるよ)');
   });
 }
 async function continueGame() {
+  if (!S.flags.tip_map) { S.flags.tip_map = true; bondEvents.push('「ちず」を 手に いれた!(右上と バッグ)'); }
   for (const x of [9, 36]) if (S.flags[`spot_town3_${x}_15`]) S.flags[`spot_town3_${x}_14`] = true; // 光る場所を 岸へ 移した
   if (S.flags.granny && !S.flags.rod) { S.flags.rod = true; bondEvents.push('おばあさんの つりざおが みつかった! みずべで Aを おそう'); }
   await fade(1, 0.4); mode = 'field'; enterMap(S.map, S.x, S.y, S.dir, true); ui.banner = { text: world.map.name, t0: clock }; await fade(0, 0.5); await storyCatchUp(S.map);

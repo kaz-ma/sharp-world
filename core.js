@@ -61,6 +61,7 @@ addEventListener('keydown', (e) => {
   else if (e.code === 'KeyX' || e.code === 'Escape' || e.code === 'Backspace') { e.preventDefault(); pushBtn('b'); runHeld = true; }
   else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') runHeld = true;
   else if (e.code === 'KeyM' || e.code === 'Tab' || e.code === 'KeyQ') { e.preventDefault(); pushBtn('menu'); }
+  else if (e.code === 'KeyN') { e.preventDefault(); pushBtn('map'); }
 });
 addEventListener('keyup', (e) => {
   const d = KD[e.code]; if (d) { const i = dirStack.indexOf(d); if (i >= 0) dirStack.splice(i, 1); }
@@ -94,7 +95,7 @@ touch.addEventListener('pointermove', (e) => {
 });
 const endStick = (e) => { if (stick && e.pointerId === stick.id) { stick = null; padDir = null; stickEl.classList.add('hidden'); } };
 touch.addEventListener('pointerup', endStick); touch.addEventListener('pointercancel', endStick);
-for (const [id, fn] of [['btnA', () => pushBtn('a')], ['btnB', () => { pushBtn('b'); runToggle = !runToggle; document.getElementById('btnB').classList.toggle('run', runToggle); }], ['btnM', () => pushBtn('menu')]]) {
+for (const [id, fn] of [['btnA', () => pushBtn('a')], ['btnB', () => { pushBtn('b'); runToggle = !runToggle; document.getElementById('btnB').classList.toggle('run', runToggle); }], ['btnM', () => pushBtn('menu')], ['btnMap', () => pushBtn('map')]]) {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', (e) => { Aud.start(); e.preventDefault(); e.stopPropagation(); el.classList.add('on'); fn(); });
   const up = () => { el.classList.remove('on'); };
@@ -377,7 +378,7 @@ function updateField(dt) {
   if (busy) return;
   if (p.pending && !p.ox && !p.oy) { p.pending = false; onArrive(); if (busy) return; }
   if (p.ox || p.oy) return;
-  while (btnQ.length && !busy) { const b = btnQ.shift(); if (b === 'a') interact(); else if (b === 'menu') event(() => openMenu()); }
+  while (btnQ.length && !busy) { const b = btnQ.shift(); if (b === 'a') interact(); else if (b === 'menu') event(() => openMenu()); else if (b === 'map') event(() => mapScreen()); }
   if (busy) return;
   const d = dirHeld();
   if (!d) { p.turnT = 0; return; }
