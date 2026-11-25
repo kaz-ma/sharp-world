@@ -1,7 +1,7 @@
 'use strict';
 // 町の あかりが ともる場面: 夜になる → 街灯が 順に ともる → 町の景色の 一枚絵 → 町の人の ひとこと
 const LIGHT = {
-  town: { title: 'ひだまり町に あかりが ともった', people: [['girl', 'わあ…! 町が、きらきら してる!'], ['oldman', 'この あかりを、もういちど 見られるとはなあ…。']] },
+  town: { title: 'ひだまり町に あかりが ともった', people: [['girl', 'わあ…! 町が、きらきら してる!']] },
   town2: { title: 'ミドリ団地に あかりが ともった', people: [['farmer', 'まあ…! ハウスの 中まで、あかるく なったよ。'], ['nboy', 'ロボットが 手を ふってる! ほら!']] },
   town3: { title: 'ナギサ港に あかりが ともった', people: [['fisher', '灯台が…まわってる。\nこの ひかりを、ずっと まってたんだ。'], ['dockgirl', 'みて! 沖の 船が、あかりで こたえてる!']] },
 };
@@ -115,6 +115,7 @@ async function lightTown() {
     const dx = p.x - n.x, dy = p.y - n.y; n.dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'r' : 'l') : (dy > 0 ? 'd' : 'u');
     setSpeaker(id); await say(line); clearSpeaker();
   }
+  await storyAfterLight(m.id); // 手がかりと 回想(story.js)
   const lead = leadMon();
   if (lead) { addBond(lead, 4); world.emote = { t0: clock }; Aud.sfx('heal'); await say(`${nameOf(lead)}は あかりを みあげて、うれしそうに している。`); }
   save();

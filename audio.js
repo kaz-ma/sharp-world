@@ -182,6 +182,7 @@ const Aud = (() => {
   const theme = () => THEMES[themeKey];
   function setTheme(k) { if (!THEMES[k]) return; themeKey = k; SONGS.title = THEMES[k].song; if (cur === 'title') { step = 0; if (ctx) nextT = ctx.currentTime + 0.05; } }
   SONGS.title = THEMES.pick.song;
+  SONGS.memory = THEMES.a.song; // 回想は オルゴール(さいしょの タップ音と 同じ 音色)
   SONGS.light = { bpm: 92, len: 32, play: (i, t, dt) => { // あかりの一枚絵の 曲(90年代アニメふうの あたたかい版)
     const bar = Math.floor(i / 8), s = i % 8, ch = [[53, 57, 60, 64], [55, 59, 62, 67], [52, 55, 59, 64], [57, 60, 64, 69]][bar];
     if (s === 0) { ch.forEach((n) => voice(mtof(n), t, { type: 'sawtooth', vol: 0.02, d: dt * 8.2, a: dt * 1.5, lp: 1500 })); voice(mtof(ch[0] - 12), t, { type: 'triangle', vol: 0.14, d: dt * 6 }); kick(t, 0.2); }

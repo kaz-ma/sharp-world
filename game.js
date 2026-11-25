@@ -134,6 +134,7 @@ async function doWarp(w) {
   if (w.needs && !S.flags[w.needs]) { await say(w.needMsg || 'ゲートは まだ しまっている…。\nだれかに しょうぶを よばれるのを まっているようだ。'); await walkActor(p, OPP[p.dir], 1); return; }
   if (w.to === 'end') { await endingScene(); return; }
   Aud.sfx('warp'); await fade(1, 0.25); enterMap(w.to, w.tx, w.ty, w.dir); await chapterOnArrive(w.to); save(); await fade(0, 0.25);
+  await storyCatchUp(w.to);
 }
 // ---------- お願いごと(サブクエスト) ----------
 const QUESTS = {
@@ -195,6 +196,7 @@ async function runScript(id, n) {
   const qid = QUEST_OF[n.id]; if (qid && await questTalk(qid)) return;
   switch (id) {
     case 'elder': {
+      if (S.flags.mem_town3) await sayAll(['ミナトくんに 会ったか。…そうか。', '発電所の 番人は、わしの 古い 友だちでな。\n山の ほうまで、たのんだよ。']);
       const c = dexCount();
       if (c >= SPECIES_ORDER.length) await sayAll(['おお! ずかんが ぜんぶ うまったぞ!', 'きみは りっぱな ぼうけんしゃじゃ。']);
       else await sayAll([`ずかんは ${c} / ${SPECIES_ORDER.length} じゃな。\n草むらで なかまを あつめて、ずかんを うめるのじゃ。`, 'ほのおは はっぱに、みずは ほのおに、はっぱは みずに つよいぞ。']);
@@ -210,6 +212,7 @@ async function runScript(id, n) {
     }
     case 'granny':
       if (!S.flags.granny) { S.flags.granny = true; await sayAll(['おや、ぼうけんに いくのかい? これを もっておいき。']); Aud.sfx('get'); S.bag.potion += 2; await say('きずぐすりを 2こ もらった!'); }
+      else if (S.flags.lit_town) await sayAll(['夜道を ほたるうさぎが てらすのは、\nむかしは「灯守り」の しごと だったそうな。', 'その 灯守りが どこへ 行ったのかは、わしも しらないねえ。']);
       else await say('むかしは この あたりにも、大きな モンスターが いたんじゃよ…。\nきを つけて いっておいで。');
       break;
     case 'traveler':
@@ -218,7 +221,7 @@ async function runScript(id, n) {
       await say('(ほのお・みず・はっぱの そうせいが、わざメニューに ◎△で でるように なった!)');
       break;
     case 'oldman':
-      if (S.flags.lit_town) { await sayAll(['街灯が ともるのは、なんねんぶりだろう…。', 'ありがとうな。この 町は、また すこしずつ あたたかく なるよ。']); break; }
+      if (S.flags.lit_town) { await sayAll(['街灯が ともるのは、なんねんぶりだろう…。', 'あの 夜の 小さな 灯りを、わしは わすれないよ。']); break; }
       await sayAll(['この 町も、むかしは もっと にぎやかだったんだ。', warmth() > 0.7 ? 'でも ちかごろは、ひとも モンスターも、すこしずつ もどってきた。\n町が あたたかく なった きがするよ。' : 'ちかごろは、草むらの 子たちが 道まで でてくる。\nだれも いない 町が、すこし さびしいのかもしれんな。']); break;
     case 'girl':
       if (S.flags.lit_town) { await sayAll(['ねえ、みて! 電線の ほたるうさぎが、こっちを むいて ゆれてるよ!', 'あかりが ともって、うれしいのかな。']); break; }
@@ -300,7 +303,8 @@ function goalInfo() {
   else if (!F.lit_town) { goal = '草原の ゲートを ぬけて「ひだまり町」へ。あかり番の レンに かつと、町の 街灯が ともるよ。'; rec = 11; }
   else if (!F.lit_town2) { goal = '「ひだまり町」の 東の 出口から「でんせん街道」へ。さきの「ミドリ団地」で、あかり番の ナナに ちょうせんしよう。'; rec = 15; }
   else if (!F.lit_town3) { goal = '「ミドリ団地」の 東へ すすんで「しおかぜ街道」へ。「ナギサ港」の 灯台守 ゴロウに ちょうせんしよう。'; rec = 20; }
-  else { goal = '3つの あかりが ともった。ずかんを うめながら、まだ みぬ 町を めざして 旅を つづけよう。(つづく…)'; rec = 99; }
+  else if (F.minato_mountain) { goal = 'ミナトを 追って、山の町「ヤマノハ」へ。番人が まっている。\n(第四章は じゅんびちゅう。ずかんを うめて まっていてね)'; rec = 99; }
+  else { goal = '3つの あかりが ともった。ずかんを うめながら、旅を つづけよう。(つづく…)'; rec = 99; }
   const hurt = S.party.some((m) => m.hp <= 0), hints = [];
   if (hurt) hints.push('ひんしの 子が いるよ。診療所や 休憩所で やすませよう。');
   if ((S.bag.potion || 0) <= 0 && F.beat_rival) hints.push('きずぐすりが ない。町の おみせで かえるよ。');
@@ -365,11 +369,13 @@ async function openMenu() {
   Aud.sfx('ok');
   for (;;) {
     const items = ['めやす', 'ずかん', 'なかま', { label: 'ボックス', sub: S.box.length ? `${S.box.length}ひき` : '' }, 'バッグ', 'セーブ', 'せってい', 'とじる'];
-    const c = await choose(items, { x: W - 196, y: 34, w: 184, title: `ずかん ${dexCount()}/${SPECIES_ORDER.length}  ${S.money || 0}コイン`, cancel: -1 });
+    if (TOWNS.some((t) => S.flags['mem_' + t])) items.splice(2, 0, 'きおく');
+    const c = await choose(items, { x: W - 196, y: 34, w: 184, rowH: items.length > 8 ? 28 : 30, title: `ずかん ${dexCount()}/${SPECIES_ORDER.length}  ${S.money || 0}コイン`, cancel: -1 });
     if (c < 0) return;
     const lab = typeof items[c] === 'string' ? items[c] : items[c].label;
     if (lab === 'めやす') await goalScreen();
     else if (lab === 'ずかん') await dexScreen();
+    else if (lab === 'きおく') { const seen = TOWNS.filter((t) => S.flags['mem_' + t]); const k = await choose(seen.map((t) => MEMORIES[t].title).concat(['もどる']), { x: W - 336, y: 60, w: 324, title: 'あつめた きおく', cancel: -1 }); if (k >= 0 && k < seen.length) await memoryScene(seen[k]); }
     else if (lab === 'なかま') await partyScreen();
     else if (lab === 'ボックス') await boxMenu();
     else if (lab === 'バッグ') {
@@ -497,7 +503,7 @@ function drawTitle() {
 let endT = 0;
 async function endingScene() {
   Aud.sfx('win'); await fade(1, 0.8, '#10202a'); mode = 'ending'; endT = clock; ui.dialog = null; flushBtn(); await fade(0, 0.8);
-  await sleep(4.5); await say('この 旅は まだ はじまったばかり。\nゲートの むこうには、どんな 町と モンスターが まっているのだろう…。', { w: 616 });
+  await sleep(4.5); await say('ミナトは、山へ むかった。\n番人と、まだ 見ぬ 灯守りが、きみを まっている――。', { w: 616 });
   await sleep(0.3); flushBtn(); await nextBtn();
   await fade(1, 0.6); mode = 'title'; Aud.bgm('title'); await fade(0, 0.5); await titleScreen();
 }
@@ -528,13 +534,14 @@ async function newGame() {
     S.dexShown = { ...(S.dexShown || {}), mikanya: true };
     await say('ミカニャを なかまに した!');
     await sayAll(['しっぽの はっぱが じまんの、ひなたぼっこ だいすきな 子じゃ。なかよく してやっておくれ。', 'まずは 東の ひなた草原へ いってみなさい。\n草むらでは、とつぜん モンスターが とびだすぞ!', 'Aで はなす・けってい、Bで もどる・ダッシュ。\nメニューで ずかんや バッグを ひらけるぞ。']);
+    await sayAll(['そうじゃ。旅の とちゅうで、町の あかりを 見かけたら、\n気に かけて やって おくれ。', 'いつか 山の ほうへ 行くことが あったら…\nいや、その 話は、また こんどに しよう。']);
     ui.banner = { text: world.map.name, t0: clock }; bondEvents.push('めやす: 東の「ひなた草原」へ(メニューの めやす でも みられるよ)');
   });
 }
 async function continueGame() {
   for (const x of [9, 36]) if (S.flags[`spot_town3_${x}_15`]) S.flags[`spot_town3_${x}_14`] = true; // 光る場所を 岸へ 移した
   if (S.flags.granny && !S.flags.rod) { S.flags.rod = true; bondEvents.push('おばあさんの つりざおが みつかった! みずべで Aを おそう'); }
-  await fade(1, 0.4); mode = 'field'; enterMap(S.map, S.x, S.y, S.dir, true); ui.banner = { text: world.map.name, t0: clock }; await fade(0, 0.5);
+  await fade(1, 0.4); mode = 'field'; enterMap(S.map, S.x, S.y, S.dir, true); ui.banner = { text: world.map.name, t0: clock }; await fade(0, 0.5); await storyCatchUp(S.map);
 }
 async function titleScreen() {
   mode = 'title'; busy = false; Aud.bgm('title');
@@ -564,6 +571,8 @@ function loop(t) {
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen();
   if (/[?&]battle=1(?:&|$)/.test(location.search)) { await battlePreview(); return; }
+  const kioku = /[?&]kioku=(all|[1-3])(?:&|$)/.exec(location.search);
+  if (kioku) { await storyPreview(kioku[1]); return; }
   const chap = /[?&]chapter=(all|[0-3])(?:&|$)/.exec(location.search);
   if (chap) { await chapterPreview(chap[1]); return; }
   const akari = /[?&]akari=(town[23]?)(?:&|$)/.exec(location.search);
