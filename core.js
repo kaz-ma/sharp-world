@@ -453,9 +453,9 @@ function drawField() {
       const f = world.fol, lead = leadMon(), mvg = f.ox || f.oy, sz = 42, bob = mvg ? Math.abs(Math.sin(clock * 14)) * 3 : Math.sin(clock * 2.4) * 0.8;
       const fx = (f.x + f.ox) * TS + 16 - cx, fy = (f.y + f.oy) * TS + TS - 2 - cy;
       g.fillStyle = 'rgba(30,50,30,.22)'; g.beginPath(); g.ellipse(fx, fy, 12, 4, 0, 0, 7); g.fill();
-      const ds = Art.dot(lead.sp), P = followerPose(lead);
+      const ds = Art.dot(lead.sp + (lead.shiny ? '*' : '')), P = followerPose(lead);
       g.save(); g.translate(Math.round(fx), Math.round(fy + P.dy)); g.scale((P.flip ? -1 : 1) * P.sx, P.sy); g.imageSmoothingEnabled = false;
-      if (ds) g.drawImage(ds, -ds.width, Math.round(-ds.height * 2 + 2 - bob), ds.width * 2, ds.height * 2); else g.drawImage(Art.sprites[lead.sp], -sz / 2, -sz * 0.955 - bob, sz, sz);
+      if (ds) g.drawImage(ds, -ds.width, Math.round(-ds.height * 2 + 2 - bob), ds.width * 2, ds.height * 2); else g.drawImage(Art.look(lead), -sz / 2, -sz * 0.955 - bob, sz, sz);
       g.restore(); g.imageSmoothingEnabled = true;
       if (P.sleep) drawZzz(fx, fy - 30); else if (P.bubble && !world.emote) bubbles.push([P.bubble.text, fx, fy - 40, P.bubble.k]);
     } else {

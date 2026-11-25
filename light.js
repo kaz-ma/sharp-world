@@ -58,7 +58,7 @@ function drawVista(id, t, count) {
   const rise = (1 - ease(on(0.2, 1.1))) * 26;
   const hero = Art.portrait('hero_back'), hh = 158, hw = hero.width * hh / hero.height;
   g.save(); g.globalAlpha = on(0.2, 0.8); g.filter = 'brightness(.72) saturate(.9)'; g.drawImage(hero, 118 - hw / 2, 288 - hh + rise, hw, hh);
-  S.party.slice(0, 6).forEach((mon, i) => { const px = 188 + i * 60, bob = Math.abs(Math.sin(clock * 2 + i)) * (t > 2.6 ? 5 : 1.5); g.drawImage(Art.sprites[mon.sp], px - 33, 284 - 66 * 0.955 - bob + rise + (i % 2) * 5, 66, 66); });
+  S.party.slice(0, 6).forEach((mon, i) => { const px = 188 + i * 60, bob = Math.abs(Math.sin(clock * 2 + i)) * (t > 2.6 ? 5 : 1.5); g.drawImage(Art.look(mon), px - 33, 284 - 66 * 0.955 - bob + rise + (i % 2) * 5, 66, 66); });
   g.restore();
   // ひかりの つぶ
   for (let i = 0; i < 26; i++) { const k = on(1.4, 1.2); const px = x0 + rnd01(i + 7) * VW + Math.sin(clock * 0.8 + i) * 12, py = 270 - ((clock * (9 + (i % 5) * 4) + rnd01(i + 51) * 220) % 220); glowDot(px, py, 4 + (i % 3) * 2, '255,226,160', 0.75 * k * clamp(py / 120, 0, 1)); }

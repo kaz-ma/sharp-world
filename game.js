@@ -550,7 +550,7 @@ function drawEnding() {
   g.fillStyle = '#3d6a56'; g.beginPath(); g.ellipse(160, 330, 360, 100, 0, 0, 7); g.ellipse(520, 338, 380, 106, 0, 0, 7); g.fill();
   const t = clock - endT, a = clamp(t / 1.5, 0, 1);
   const hb = Art.portrait('hero_back'), hh = 208, hw = hb.width * hh / hb.height; g.globalAlpha = a; g.drawImage(hb, 16, 300 - hh, hw, hh); g.globalAlpha = 1;
-  S.party.slice(0, 6).forEach((m, i) => { const x = 230 + i * 70, bob = Math.abs(Math.sin(clock * 2 + i)) * 7; g.globalAlpha = a; g.drawImage(Art.sprites[m.sp], x - 34, 274 - 70 - bob, 68, 68); g.globalAlpha = 1; });
+  S.party.slice(0, 6).forEach((m, i) => { const x = 230 + i * 70, bob = Math.abs(Math.sin(clock * 2 + i)) * 7; g.globalAlpha = a; g.drawImage(Art.look(m), x - 34, 274 - 70 - bob, 68, 68); g.globalAlpha = 1; });
   g.globalAlpha = a; txt('シャープワールド', 320, 74, { size: 40, w: 900, align: 'center', color: '#fff6dc', stroke: 'rgba(40,30,60,.6)', sw: 8 });
   txt('― おわり ―', 320, 124, { size: 26, w: 900, align: 'center', color: '#ffd36b', stroke: 'rgba(40,30,60,.6)', sw: 6 });
   const min = Math.floor(S.time / 60);

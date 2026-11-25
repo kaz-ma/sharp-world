@@ -168,7 +168,7 @@ const Art = (() => {
   };
 
   const imgs = {}, bgs = {};
-  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0 }, hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 }, himoriusagi: { tol: 30, erode: 0 }, yuuhineko: { tol: 34, erode: 0, holes: [[590, 396]] }, birisuzume: { tol: 34, erode: 0 }, fukufukurisu: { tol: 34, erode: 0 }, kirikamome: { tol: 30, erode: 0 }, hikaritanishi: { tol: 30, erode: 0 }, hinatagama: { tol: 30, erode: 0 }, funenko: { tol: 30, erode: 0, holes: [[1016, 246], [944, 205], [1209, 420], [1167, 428], [923, 254], [1109, 317], [1139, 139], [1055, 251], [1078, 353]] }, sabikani: { tol: 34, erode: 0, holes: [[1013, 607]] }, hanedoron: { tol: 30, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
+  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0, holes: [[686, 606]] },hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 }, himoriusagi: { tol: 30, erode: 0 }, yuuhineko: { tol: 34, erode: 0, holes: [[590, 396]] }, birisuzume: { tol: 34, erode: 0 }, fukufukurisu: { tol: 34, erode: 0 }, kirikamome: { tol: 30, erode: 0 }, hikaritanishi: { tol: 30, erode: 0 }, hinatagama: { tol: 30, erode: 0 }, funenko: { tol: 30, erode: 0, holes: [[1016, 246], [944, 205], [1209, 420], [1167, 428], [923, 254], [1109, 317], [1139, 139], [1055, 251], [1078, 353]] }, sabikani: { tol: 34, erode: 0, holes: [[1013, 607]] }, hanedoron: { tol: 30, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
   function removeBg(src, opt = {}) { // lab.jsと同じ方法: ふちから広がる背景色だけを透明にする
     const w = src.width, h = src.height, c = cv(w, h), g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(src, 0, 0);
@@ -248,7 +248,7 @@ const Art = (() => {
     await Promise.all(Object.keys(SRCS).filter((id) => !id.startsWith('bg_')).map(load));
     for (const k in cache) delete cache[k]; // 地面の部品・木・家などは、次に使うときに 作られる
     for (const id of SPECIES_ORDER) if (sprites[id]) repaint(sprites[id], makeSprite(id));
-    for (const [store, make] of [[portraits, portrait], [dots, dot], [shinies, shiny], [bgMade, (k) => { bg(k); return bgMade[k]; }]]) {
+    for (const [store, make] of [[portraits, portrait], [shinies, shiny], [dots, dot],[bgMade, (k) => { bg(k); return bgMade[k]; }]]) {
       for (const k of Object.keys(store)) { const old = store[k]; delete store[k]; const fresh = make(k); if (old && fresh) { repaint(old, fresh); store[k] = old; } }
     }
   }
@@ -713,9 +713,9 @@ const Art = (() => {
   }
   // ---------- ドット絵風(歩くときの小さな姿): AIの絵を小さなマス目に縮め、色を減らし、輪郭をつける ----------
   const dots = {};
-  function dot(id) {
-    if (dots[id]) return dots[id];
-    const spr = sprites[id]; if (!spr) return null;
+  function dot(key) { // key = 種族id。色違いは うしろに * をつける
+    if (dots[key]) return dots[key];
+    const spr = key.endsWith('*') ? shiny(key.slice(0, -1)) : sprites[key]; if (!spr) return null;
     const sc = cv(spr.width, spr.height), sg = sc.getContext('2d', { willReadFrequently: true }); sg.drawImage(spr, 0, 0);
     const d = sg.getImageData(0, 0, sc.width, sc.height).data; let x0 = sc.width, y0 = sc.height, x1 = -1, y1 = -1;
     for (let y = 0; y < sc.height; y++) for (let x = 0; x < sc.width; x++) if (d[(y * sc.width + x) * 4 + 3] > 70) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
@@ -736,13 +736,23 @@ const Art = (() => {
     for (let y = 0; y < oh; y++) for (let x = 0; x < ow; x++) if (!filled(x, y) && (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1))) edge.push((y * ow + x) * 4);
     for (const o of edge) { p[o] = 58; p[o + 1] = 44; p[o + 2] = 50; p[o + 3] = 255; }
     og.putImageData(im, 0, 0);
-    return (dots[id] = out);
+    return (dots[key] = out);
   }
-  // ひかりの個体(色違い): 色相をずらした絵を、必要なときに作る
+  // ひかりの個体(色違い): 塗り分け(shiny.js)か、色相をずらした絵を、必要なときに作る
   const shinies = {};
   function shiny(id) {
     if (shinies[id]) return shinies[id];
     const spr = sprites[id]; if (!spr) return null;
+    return (shinies[id] = SHINY.recipes[id] ? SHINY.paint(spr, SHINY.recipes[id]) : hueShift(spr));
+  }
+  // カットインで 大きく 寄るとき用: 元の 大きさの 絵を、その場で 塗る(とっておかない)
+  function shinyRaw(id) {
+    const im = imgs[id], rec = SHINY.recipes[id]; if (!im) return null;
+    if (!rec) return hueShift(im);
+    const k = Math.min(178 / im.width, 178 / im.height); // makeSprite と 同じ 置き方から、場所の 指定を 元の 絵の 割合に 直す
+    return SHINY.paint(im, SHINY.fit(rec, (192 - im.width * k) / 2 / 192, (184 - im.height * k) / 192, im.width * k / 192, im.height * k / 192, 1 / (2 * k)));
+  }
+  function hueShift(spr) {
     const c = cv(spr.width, spr.height), cg = c.getContext('2d', { willReadFrequently: true }); cg.drawImage(spr, 0, 0);
     const im = cg.getImageData(0, 0, c.width, c.height), d = im.data;
     for (let i = 0; i < d.length; i += 4) {
@@ -753,8 +763,9 @@ const Art = (() => {
       const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p2 = 2 * l - q, f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p2 + (q - p2) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p2 + (q - p2) * (2 / 3 - t) * 6 : p2; };
       d[i] = f(h + 1 / 3) * 255; d[i + 1] = f(h) * 255; d[i + 2] = f(h - 1 / 3) * 255;
     }
-    cg.putImageData(im, 0, 0); return (shinies[id] = c);
+    cg.putImageData(im, 0, 0); return c;
   }
+  const look = (m) => (m.shiny && shiny(m.sp)) || sprites[m.sp]; // その子の 絵(色違いなら 色違い)
   const bgMade = {};
   function bg(id) {
     if (bgs[id]) return bgs[id];
@@ -763,5 +774,5 @@ const Art = (() => {
   }
 
   const raw = (id) => imgs[id] || null; // 背景を ぬいた、元の 大きさの絵(大きく 寄るとき用)
-  return { prop, groundColor, rebuild, raw, S, TS, sprites, bg, portrait, dot, shiny, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
+  return { prop, groundColor, rebuild, raw, S, TS, sprites, bg, portrait, dot, shiny, shinyRaw, look, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
 })();

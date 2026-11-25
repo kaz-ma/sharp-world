@@ -358,7 +358,7 @@ async function throwBall() {
     if (S.party.length < 6) { S.party.push(f); await msg(`${nameOf(f)}は なかまに くわわった!`, 1.0); } else { S.box.push(f); await msg(`${nameOf(f)}は ボックスに おくられた!\n(メニューの「ボックス」で みられるよ)`, 1.4); }
     b.ball.vis = false;
     if (!S.dexShown) S.dexShown = {};
-    if (!S.dexShown[f.sp]) { S.dexShown[f.sp] = true; ui.dialog = null; Aud.cry(f.sp); await cutin(Art.sprites[f.sp], nameOf(f), sp.dex); }
+    if (!S.dexShown[f.sp]) { S.dexShown[f.sp] = true; ui.dialog = null; Aud.cry(f.sp); await cutin(Art.look(f), nameOf(f), sp.dex); }
     return true;
   }
   Aud.sfx('escape'); b.ball.vis = false; await popIn(b.es);
@@ -461,7 +461,7 @@ function drawWhiteMon(spr, cx, bot, size, a) {
   g.drawImage(tmpC, cx - size / 2, bot - size * 0.955, size, size);
 }
 async function evolveScene(m) {
-  const e = SPECIES[m.sp].evo, A = Art.sprites[m.sp], B = Art.sprites[e.to], oldName = nameOf(m), t0 = clock; let swapped = false;
+  const e = SPECIES[m.sp].evo, A = Art.look(m), B = Art.look({ sp: e.to, shiny: m.shiny }), oldName = nameOf(m), t0 = clock; let swapped = false;
   ui.dialog = null; Aud.bgm(null);
   ui.overlay = () => {
     const t = clock - t0;
@@ -478,7 +478,7 @@ async function evolveScene(m) {
   ui.overlay = null; Aud.bgm(world.map.bgm);
   await say(`おめでとう! ${oldName}は ${nameOf(m)}に しんかした!`);
   if (!S.dexShown) S.dexShown = {};
-  if (!S.dexShown[e.to]) { S.dexShown[e.to] = true; await cutin(Art.sprites[e.to], nameOf(m), SPECIES[e.to].dex); }
+  if (!S.dexShown[e.to]) { S.dexShown[e.to] = true; await cutin(Art.look(m), nameOf(m), SPECIES[e.to].dex); }
   if (e.move) await learnMove(m, e.move);
 }
 async function evolveCheck() {
@@ -524,7 +524,7 @@ async function listScreen(o) {
 function typeChip(x, y, t) { const T = TYPES[t]; g.fillStyle = T.color; rr(x, y, 44, 16, 4); g.fill(); g.strokeStyle = 'rgba(45,36,64,.55)'; g.lineWidth = 1; g.stroke(); txt(T.name, x + 22, y + 8.5, { size: 11, color: '#fff', align: 'center', stroke: 'rgba(45,36,64,.45)', sw: 2.4 }); }
 function monDetail(m, x, y, w) {
   const sp = SPECIES[m.sp];
-  g.drawImage(Art.sprites[m.sp], x + 4, y + 2, 96, 96);
+  g.drawImage(Art.look(m), x + 4, y + 2, 96, 96);
   txt(nameOf(m), x + 108, y + 18, { size: 20 }); txt('Lv' + m.lv, x + w - 4, y + 18, { size: 15, align: 'right', color: MUTED }); typeChip(x + 108, y + 34, sp.t);
   txt('とくせい', x + 108, y + 98, { size: 11, color: MUTED }); txt(ABIL[sp.ab] ? ABIL[sp.ab].n : '―', x + 154, y + 98, { size: 13 });
   const f = m.hp / m.max, c = hpColor(f); txt('HP', x + 108, y + 66, { size: 11, color: '#c0504a', w: 900 }); bar(x + 130, y + 60, w - 134, 11, f, c[0], c[1]); txt(`${m.hp}/${m.max}`, x + w - 4, y + 82, { size: 12, align: 'right' });
@@ -545,7 +545,7 @@ async function partyScreen(o = {}) {
     onB: () => { if (sel != null) { sel = null; return true; } return false; },
     extra: view ? { label: () => (sel == null ? 'いれかえ' : 'ここへ'), act: (i) => swapAct(i) } : null,
     rowFn: (i, x, y, w, h) => {
-      const m = L[i]; g.save(); if (m.hp <= 0) g.globalAlpha = 0.55; g.drawImage(Art.sprites[m.sp], x + 4, y - 2, 46, 46); g.restore();
+      const m = L[i]; g.save(); if (m.hp <= 0) g.globalAlpha = 0.55; g.drawImage(Art.look(m), x + 4, y - 2, 46, 46); g.restore();
       if (view) { g.fillStyle = sel === i ? PEACH : i === 0 ? '#6aa896' : '#c9c2d4'; rr(x + 2, y + 2, 16, 14, 7); g.fill(); txt(String(i + 1), x + 10, y + 9.5, { size: 10, color: '#fff', align: 'center' }); }
       txt(nameOf(m), x + 56, y + 14, { size: 15 }); txt('Lv' + m.lv, x + 56 + nameW(nameOf(m)) + 8, y + 15, { size: 12, color: MUTED }); if (view && sel === i) txt('いれかえ中', x + w - 8, y + 14, { size: 11, color: PEACH, align: 'right' }); else if (view && i === 0) txt('せんとう', x + w - 8, y + 14, { size: 11, color: '#6aa896', align: 'right' });
       const f = m.hp / m.max, c = hpColor(f); bar(x + 56, y + 26, w - 124, 8, f, c[0], c[1]);

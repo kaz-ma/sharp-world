@@ -43,8 +43,8 @@ function diaryDynamic() {
   const out = [];
   for (const sp of SPECIES_ORDER) if (S.caught[sp] && sp !== 'mikanya') { const d = SPECIES[sp]; out.push(['met_' + sp, null, d.from ? `${d.n}に 進化` : `${d.n}と 出会った`, d.from ? `${SPECIES[d.from].n}が、${d.n}に なった。\nすこし 大きくなった 背中を、しばらく ながめた。` : `${d.n}が、仲間に くわわった。\n${d.dex.split('。')[0]}。`, { sp }]); }
   for (const m of [...S.party, ...S.box]) {
-    if (bondLv(m) >= 4) out.push(['bond_' + m.sp, null, 'こころが かよった', `${nameOf(m)}と、ことばが なくても 通じる 気がする。`, { sp: m.sp }]);
-    if (m.shiny) out.push(['shiny_' + m.sp, null, 'ひかりの 個体', `色の ちがう ${nameOf(m)}に 出会えた。\nめったに ないことらしい。`, { sp: m.sp }]);
+    if (bondLv(m) >= 4) out.push(['bond_' + m.sp, null, 'こころが かよった', `${nameOf(m)}と、ことばが なくても 通じる 気がする。`, { sp: m.sp, shiny: m.shiny }]);
+    if (m.shiny) out.push(['shiny_' + m.sp, null, 'ひかりの 個体', `色の ちがう ${nameOf(m)}に 出会えた。\nめったに ないことらしい。`, { sp: m.sp, shiny: true }]);
   }
   for (const [k, q] of Object.entries(QUESTS)) if ((S.quests || {})[k] === 2) out.push(['quest_' + k, null, 'お願いごと', `「${q.title}」の お願いを かなえた。\nありがとう、と 言われた。`, { face: q.npc }]);
   return out;
@@ -80,7 +80,7 @@ function drawEntryPic(p, x, y, s) {
   if (!p) { g.strokeStyle = 'rgba(150,118,92,.35)'; g.lineWidth = 1; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(x + 8, y + 18 + i * 10); g.lineTo(x + s - 8, y + 18 + i * 10); g.stroke(); } lampMark(x + s / 2, y + s - 9, 3.2); return; }
   g.save(); g.fillStyle = '#e4d8c4'; g.fillRect(x, y, s, s); g.beginPath(); g.rect(x, y, s, s); g.clip();
   if (p.img) { const im = pic(p.img); if (im) drawCover(im, x, y, s, s); }
-  else if (p.sp) g.drawImage(Art.sprites[p.sp], x - 2, y - 2, s + 4, s + 4);
+  else if (p.sp) g.drawImage(Art.look(p), x - 2, y - 2, s + 4, s + 4);
   else if (p.face) { const im = Art.portrait(p.face), k = s * 1.25 / im.height; g.drawImage(im, x + (s - im.width * k) / 2, y + 1, im.width * k, im.height * k); }
   g.restore(); g.strokeStyle = '#3d3550'; g.lineWidth = 1.5; g.strokeRect(x, y, s, s);
   g.fillStyle = 'rgba(194,90,98,.55)'; g.save(); g.translate(x + 2, y + 2); g.rotate(-0.7); g.fillRect(-9, -3, 18, 6); g.restore(); // テープ

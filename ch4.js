@@ -120,8 +120,8 @@ function drawFinale(t) {
   g.fillStyle = '#100f22'; g.fillRect(x0, 276, VW, H - 276); g.fillStyle = '#2c2a46'; g.fillRect(x0, 270, VW, 8); for (let x = x0; x < x1; x += 28) { g.fillStyle = '#242238'; g.fillRect(x, 258, 3, 14); } g.fillRect(x0, 257, VW, 3);
   const hero = Art.portrait('hero_back'), hh = 84, hw = hero.width * hh / hero.height;
   g.save(); g.filter = 'brightness(.6)'; g.drawImage(hero, 318 - hw / 2, 286 - hh, hw, hh);
-  const heir = S.party.find((m) => m.sp === 'himoriusagi') || S.party[0]; if (heir) g.drawImage(Art.sprites[heir.sp], 348, 238, 48, 48);
-  if (S.party.some((m) => m.sp === 'mikanya' || m.sp === 'yuuhineko')) g.drawImage(Art.sprites[S.party.some((m) => m.sp === 'yuuhineko') ? 'yuuhineko' : 'mikanya'], 248, 248, 38, 38);
+  const heir = S.party.find((m) => m.sp === 'himoriusagi') || S.party[0]; if (heir) g.drawImage(Art.look(heir), 348, 238, 48, 48);
+  const cat = S.party.find((m) => m.sp === 'yuuhineko') || S.party.find((m) => m.sp === 'mikanya'); if (cat) g.drawImage(Art.look(cat), 248, 248, 38, 38);
   Art.person(g, 'rival', 'rival', 'u', 0, 214, 282, 1.15); Art.person(g, 'keeper', 'keeper', 'u', 0, 180, 282, 1.25);
   g.restore();
   if (heir && heir.sp === 'himoriusagi') glowDot(372, 244, 32, '255,214,140', 0.6 + 0.15 * Math.sin(clock * 3));
