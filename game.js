@@ -398,21 +398,70 @@ async function openMenu() {
 }
 
 // ---------- タイトル・エンディング ----------
+// オープニングと タイトルの絵(assets/op_*.webp。作り方は brand/ フォルダ)
+const OP = {}, OP_IDS = ['op_1', 'op_2', 'op_3', 'op_4', 'op_5', 'op_logo', 'op_title'];
+let opLoad = null;
+function loadOp() {
+  return opLoad || (opLoad = Promise.all(OP_IDS.map((id) => new Promise((r) => {
+    const im = new Image(); im.onload = () => { OP[id] = im; r(); }; im.onerror = () => r();
+    im.src = (window.ART_SRC && window.ART_SRC[id]) || `assets/${id}.webp`;
+  }))));
+}
+// コマが 左から順に 上・下・右・上・下 から出てきて、そろったら 題字が すっと出る
+const OP_CUT = [241, 457, 783, 1011].map((v) => v / 1200), OP_SLANT = 34, OP_IN = ['t', 'b', 'r', 't', 'b'];
+const OP_T0 = 0.35, OP_STEP = 0.5, OP_DUR = 0.46, OP_TITLE = 3.15, OP_END = 5.9;
+const easeOut = (k) => 1 - Math.pow(1 - k, 3);
+const calmMotion = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+let opT = 0, opLanded = 0;
+function drawOpening() {
+  const t = clock - opT;
+  g.fillStyle = '#191527'; g.fillRect(0, 0, VW, H);
+  if (t < 0) return;
+  for (let i = 0; i < 5; i++) {
+    const k = clamp((t - OP_T0 - i * OP_STEP) / OP_DUR, 0, 1); if (k <= 0) continue;
+    const e = easeOut(k), calm = calmMotion.matches;
+    const lt = i ? OP_CUT[i - 1] * VW : -6, rt = i < 4 ? OP_CUT[i] * VW : VW + 6, lb = i ? lt - OP_SLANT : -6, rb = i < 4 ? rt - OP_SLANT : VW + 6;
+    if (k >= 1 && opLanded <= i) { opLanded = i + 1; if (!calm) ui.shake = 3; }
+    let dx = 0, dy = 0;
+    if (!calm) { if (OP_IN[i] === 't') dy = -(1 - e) * (H + 12); else if (OP_IN[i] === 'b') dy = (1 - e) * (H + 12); else dx = (1 - e) * (VW - lb); }
+    g.save(); if (calm) g.globalAlpha = e; g.translate(dx, dy);
+    const shape = () => { g.beginPath(); g.moveTo(lt, -6); g.lineTo(rt, -6); g.lineTo(rb, H + 6); g.lineTo(lb, H + 6); g.closePath(); };
+    g.save(); shape(); g.clip(); g.drawImage(OP['op_' + (i + 1)], (lt + rt + lb + rb) / 4 - 155, -6, 310, H + 12); g.restore();
+    shape(); g.lineWidth = 5; g.strokeStyle = '#f2e6d2'; g.stroke();
+    g.restore();
+  }
+  const k = clamp((t - OP_TITLE) / 0.6, 0, 1);
+  if (k > 0) {
+    const e = easeOut(k), k2 = easeOut(clamp((t - OP_TITLE - 0.18) / 0.7, 0, 1));
+    g.save(); g.translate(VW / 2, 294); g.rotate(-4 * Math.PI / 180); g.globalAlpha = e;
+    const bx = -VW / 2 - 60 - (1 - e) * (calmMotion.matches ? 0 : VW);
+    g.fillStyle = 'rgba(34,27,52,.94)'; g.fillRect(bx, -43, VW + 120, 87); g.fillStyle = '#c25a62'; g.fillRect(bx, 44, VW + 120, 6);
+    g.globalAlpha = k2; g.drawImage(OP.op_logo, -275 - (calmMotion.matches ? 0 : (1 - k2) * 70), -47, 550, 95);
+    g.restore();
+  }
+  if (t > 0.8) txt('タップで スキップ', VW - 14, 15, { size: 11, align: 'right', color: '#f7f5f1', stroke: 'rgba(25,21,39,.8)', sw: 4 });
+}
+async function openingScene() {
+  mode = 'opening'; opT = clock + 1e9; opLanded = 0; // 絵が そろうまでは まっくら
+  await Promise.race([loadOp(), sleep(5)]);
+  if (!OP_IDS.every((id) => OP[id])) { mode = 'title'; return; } // 絵が 読めないときは とばす
+  opT = clock; flushBtn(); let skipped = false;
+  while (clock - opT < OP_END) { await nextFrame(); if (btnQ.length) { btnQ.length = 0; skipped = true; break; } }
+  await fade(1, skipped ? 0.25 : 0.7, '#000'); // 暗転
+  mode = 'title'; await sleep(skipped ? 0.1 : 0.3); flushBtn(); fade(0, 0.8);
+}
 function drawTitle() {
-  const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#a3c4d8'); sky.addColorStop(0.55, '#e9f0f2'); sky.addColorStop(1, '#f3eadb'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
-  const sun = g.createRadialGradient(520, 70, 4, 520, 70, 120); sun.addColorStop(0, 'rgba(255,250,200,.95)'); sun.addColorStop(1, 'rgba(255,250,200,0)'); g.fillStyle = sun; g.fillRect(380, 0, 260, 200);
-  g.fillStyle = 'rgba(255,255,255,.9)';
-  for (let i = 0; i < 4; i++) { const x = ((i * 220 + clock * (9 + i * 3)) % 820) - 120, y = 40 + (i * 53) % 150; g.beginPath(); g.ellipse(x, y, 54, 16, 0, 0, 7); g.ellipse(x + 28, y - 10, 36, 16, 0, 0, 7); g.ellipse(x - 28, y + 2, 30, 12, 0, 0, 7); g.fill(); }
-  g.fillStyle = '#c3d8b0'; g.beginPath(); g.ellipse(120, 330, 320, 110, 0, 0, 7); g.ellipse(540, 340, 340, 118, 0, 0, 7); g.fill();
-  const gr = g.createLinearGradient(0, 270, 0, H); gr.addColorStop(0, '#aacb8c'); gr.addColorStop(1, '#78ab62'); g.fillStyle = gr; g.beginPath(); g.moveTo(0, 300); g.quadraticCurveTo(320, 262, W, 300); g.lineTo(W, H); g.lineTo(0, H); g.closePath(); g.fill();
-  for (let i = 0; i < 22; i++) { const x = (i * 83) % 640, y = 310 + (i * 41) % 44; Art.star(g, x, y, 3, i % 2 ? 'rgba(255,255,255,.7)' : 'rgba(255,226,120,.9)'); }
-  const hop = (s) => Math.abs(Math.sin(clock * 2.2 + s)) * 8;
-  const put = (id, x, size, s) => { const k = size / 192; g.drawImage(Art.sprites[id], x - size / 2, 352 - size * 0.955 - hop(s), size, size); };
-  put('kinokokko', 62, 96, 1); put('pukurisu', 156, 104, 2); put('hotaruusagi', 484, 104, 3); put('hinatagaeru', 580, 100, 4);
-  g.drawImage(Art.sprites.shizukufin, 520, 118 + Math.sin(clock * 1.8) * 6, 70, 70);
-  put('mikanya', 320, 150, 0);
-  txt('シャープワールド', 320, 58, { size: 44, w: 900, align: 'center', color: '#37323f', stroke: '#f7f5f1', sw: 9 });
-  txt('― みほんばん ―', 320, 98, { size: 15, align: 'center', color: '#5d566a', stroke: 'rgba(255,255,255,.85)', sw: 5 });
+  const x = (VW - 864) / 2;
+  g.fillStyle = '#10142e'; g.fillRect(0, 0, VW, H);
+  if (!OP.op_title) { txt('シャープワールド', VW / 2, 120, { size: 46, w: 900, align: 'center', color: '#fbf0da', stroke: '#141028', sw: 9 }); return; }
+  g.drawImage(OP.op_title, x, 0, 864, H);
+  // 街灯と 耳の あかりが ゆらぎ、星が またたく
+  g.save(); g.globalCompositeOperation = 'screen';
+  const light = (lx, ly, r, a) => { const gr = g.createRadialGradient(lx, ly, 1, lx, ly, r); gr.addColorStop(0, `rgba(255,205,140,${a})`); gr.addColorStop(1, 'rgba(255,180,110,0)'); g.fillStyle = gr; g.fillRect(lx - r, ly - r, r * 2, r * 2); };
+  light(x + 432, 118, 74, 0.2 + 0.1 * Math.sin(clock * 1.7) + 0.04 * Math.sin(clock * 7.3));
+  light(x + 583, 162, 27, 0.22 + 0.18 * Math.sin(clock * 2.3)); light(x + 613, 162, 27, 0.22 + 0.18 * Math.sin(clock * 2.3 + 0.9));
+  g.restore();
+  for (let i = 0; i < 16; i++) { const a = Math.max(0, Math.sin(clock * (0.9 + (i % 4) * 0.3) + i * 2.1)); Art.star(g, (i * 167 + 31) % VW, 14 + (i * 47) % 150, 1.2 + (i % 3) * 0.6, `rgba(255,244,214,${a * 0.8})`); }
 }
 let endT = 0;
 async function endingScene() {
@@ -454,7 +503,7 @@ async function continueGame() {
 async function titleScreen() {
   mode = 'title'; busy = false; Aud.bgm('field');
   for (;;) {
-    const c = await choose(['はじめから', { label: 'つづきから', off: !hasSave() }, 'セーブを よみこむ'], { x: 220, y: 116, w: 200, cancel: false });
+    const c = await choose(['はじめから', { label: 'つづきから', off: !hasSave() }, 'セーブを よみこむ'], { x: 50, y: 293, w: 540, cols: 3, cancel: false }); // 下端は iPhoneの線の ぶん あける
     if (c === 0) { await newGame(); return; }
     if (c === 1 && loadSave()) { await continueGame(); return; }
     if (c === 2) await transferWindow('in', '');
@@ -467,16 +516,16 @@ let ema = 0.016, slowN = 0;
 function loop(t) {
   const raw = (t - lastT) / 1000, dt = Math.min(0.05, raw); lastT = t;
   // 重い端末では、画面の演出を自動でかるくする(手動で選んだときは そのまま)
-  if (!manualGrade && mode !== 'title') { ema = ema * 0.96 + Math.min(raw, 0.2) * 0.04; if (ema > 0.036 && gradeLevel > 0) { if (++slowN > 90) { gradeLevel--; slowN = 0; ema = 0.025; } } else slowN = 0; }
+  if (!manualGrade && mode !== 'title' && mode !== 'opening') { ema = ema * 0.96 + Math.min(raw, 0.2) * 0.04; if (ema > 0.036 && gradeLevel > 0) { if (++slowN > 90) { gradeLevel--; slowN = 0; ema = 0.025; } } else slowN = 0; }
   tick(dt); requestAnimationFrame(loop);
 }
 (async () => {
-  resize();
+  resize(); loadOp();
   try { await Promise.race([document.fonts.load('700 16px "Zen Kaku Gothic New"'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) {}
   try { const o = JSON.parse(localStorage.getItem('mofu.opts') || '{}'); if (o.gl != null) { gradeLevel = o.gl; manualGrade = true; } } catch (e) {}
   await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
-  lastT = performance.now(); requestAnimationFrame(loop);
-  await titleScreen();
+  mode = 'opening'; opT = 1e9; lastT = performance.now(); requestAnimationFrame(loop);
+  await openingScene(); await titleScreen();
 })();
 
 if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(location.hostname)) { // 開発用(自分のパソコンでだけ)
@@ -485,7 +534,7 @@ if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(locat
     async advance(sec) { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) { tick(1 / 60); for (let j = 0; j < 12; j++) await null; } },
     grade(v) { gradeOn = v; }, warm(v) { warmDbg = v; },
     grid(v) { showGrid = v; },
-    cutin, setSpeaker, say, event, lightTown, boxMenu, addBond, bondLv, petFollower, goalInfo, questTalk, goFishing, learnMove, evolveCheck, movesOf, relearnable,
+    openingScene, cutin, setSpeaker, say, event, lightTown, boxMenu, addBond, bondLv, petFollower, goalInfo, questTalk, goFishing, learnMove, evolveCheck, movesOf, relearnable,
     hold(d) { dirStack.length = 0; if (d) dirStack.push(d); },
     warp(id, x, y, dir) { enterMap(id, x, y, dir || 'r', true); },
     encounter(sp, lv, sh) { event(async () => { await flashFx(1); await fade(1, 0.2, '#000'); const foe = mkMon(sp, lv); if (sh) foe.shiny = true; const r = await runBattle({ foes: [foe] }); await afterBattle(r); }); },

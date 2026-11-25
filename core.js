@@ -525,9 +525,11 @@ function render() {
   resize(); g.setTransform(cv.width / VW, 0, 0, cv.height / H, 0, 0); g.imageSmoothingQuality = 'high'; ui.hits.length = 0;
   g.save(); if (ui.shake > 0.3) { g.translate(rnd(-ui.shake, ui.shake), rnd(-ui.shake, ui.shake)); ui.shake *= 0.84; } else ui.shake = 0;
   if (mode === 'field') drawField();
-  else { g.save(); g.translate(OX, 0); if (mode === 'title') drawTitle(); else if (mode === 'battle') drawBattle(); else if (mode === 'ending') drawEnding(); g.restore(); g.restore(); smearEdges(); g.save(); }
+  else if (mode === 'title') drawTitle(); // タイトルと オープニングは 画面の はばいっぱいに かく
+  else if (mode === 'opening') drawOpening();
+  else { g.save(); g.translate(OX, 0); if (mode === 'battle') drawBattle(); else if (mode === 'ending') drawEnding(); g.restore(); g.restore(); smearEdges(); g.save(); }
   g.restore();
-  if (gradeOn && mode !== 'ending') grade();
+  if (gradeOn && (mode === 'field' || mode === 'battle')) grade();
   g.save(); g.translate(OX, 0);
   if (ui.overlay) ui.overlay();
   drawDialog(); drawNameTag(); drawChoice();
