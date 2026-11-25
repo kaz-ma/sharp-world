@@ -328,18 +328,20 @@ async function petFollower(m) {
   if (!m.petAt || S.time - m.petAt > 60) { m.petAt = S.time; addBond(m, 1); }
 }
 // めやす: いま どこへ むかえば いいか
+// めやすの 注意は、つぎの 相手の いちばん 高いレベルを もとに 出す
+const topLv = (id) => Math.max(...TRAINERS[id].team.map(([, l]) => l));
 function goalInfo() {
   const F = S.flags, maxLv = Math.max(...S.party.map((m) => m.lv), 1);
   let goal, rec;
-  if (!F.beat_rival) { goal = '東の「ひなた草原」へ。草むらで 仲間を あつめながら、道の トレーナーに ちょうせんしよう。'; rec = 7; }
-  else if (!F.lit_town) { goal = '草原の ゲートを ぬけて「ひだまり町」へ。あかり番の レンに かつと、町の 街灯が ともるよ。'; rec = 11; }
-  else if (!F.lit_town2) { goal = '「ひだまり町」の 東の 出口から「でんせん街道」へ。さきの「ミドリ団地」で、あかり番の ナナに ちょうせんしよう。'; rec = 15; }
-  else if (!F.lit_town3) { goal = '「ミドリ団地」の 東へ すすんで「しおかぜ街道」へ。「ナギサ港」の 灯台守 ゴロウに ちょうせんしよう。'; rec = 20; }
+  if (!F.beat_rival) { goal = '東の「ひなた草原」へ。草むらで 仲間を あつめながら、道の トレーナーに ちょうせんしよう。'; rec = topLv('rival') + 1; }
+  else if (!F.lit_town) { goal = '草原の ゲートを ぬけて「ひだまり町」へ。あかり番の レンに かつと、町の 街灯が ともるよ。'; rec = topLv('techie') + 1; }
+  else if (!F.lit_town2) { goal = '「ひだまり町」の 東の 出口から「でんせん街道」へ。さきの「ミドリ団地」で、あかり番の ナナに ちょうせんしよう。'; rec = topLv('nana'); }
+  else if (!F.lit_town3) { goal = '「ミドリ団地」の 東へ すすんで「しおかぜ街道」へ。「ナギサ港」の 灯台守 ゴロウに ちょうせんしよう。'; rec = topLv('goro'); }
   else if (F.cleared) { goal = 'すべての あかりが ともった。\nずかんを うめながら、すきな 町へ 旅を つづけよう。'; rec = 0; }
-  else if (F.met_keeper) { goal = 'ヤマノハの 発電所で、ミナトと しょうぶしよう。'; rec = 19; }
-  else if (F.ch_town4) { goal = 'ヤマノハの「発電所」の とびらを たずねよう。'; rec = 18; }
-  else if (F.minato_mountain) { goal = '「ナギサ港」の 東の「やまなみ道」を こえて、山の町「ヤマノハ」へ。\nミナトと 番人が まっている。'; rec = 17; }
-  else { goal = '3つの あかりが ともった。「ナギサ港」の 東の「やまなみ道」へ すすもう。'; rec = 17; }
+  else if (F.met_keeper) { goal = 'ヤマノハの 発電所で、ミナトと しょうぶしよう。'; rec = topLv('minato2') - 1; }
+  else if (F.ch_town4) { goal = 'ヤマノハの「発電所」の とびらを たずねよう。'; rec = topLv('minato2') - 1; }
+  else if (F.minato_mountain) { goal = '「ナギサ港」の 東の「やまなみ道」を こえて、山の町「ヤマノハ」へ。\nミナトと 番人が まっている。'; rec = topLv('hiker'); }
+  else { goal = '3つの あかりが ともった。「ナギサ港」の 東の「やまなみ道」へ すすもう。'; rec = topLv('hiker'); }
   const hurt = S.party.some((m) => m.hp <= 0), hints = [];
   if (hurt) hints.push('ひんしの 子が いるよ。診療所や 休憩所で やすませよう。');
   if ((S.bag.potion || 0) <= 0 && F.beat_rival) hints.push('きずぐすりが ない。町の おみせで かえるよ。');
@@ -431,7 +433,7 @@ async function menuLoop() {
         else if (k === 4) { manualGrade = true; gradeLevel = gradeLevel === 2 ? 1 : gradeLevel === 1 ? 0 : 2; saveOpts(); }
         else if (k === 5) await say('バトルの あと、町の あかりを ともしたあと、アイテムを ひろったあと、じどうで セーブされるよ。');
         else if (k === 6) await transferMenu();
-        else if (k === 7) await sayAll(['シャープワールド(仮)', 'えは、AIで つくった えを もとに しています。\nおんがくと こうかおんは、ゲームの なかで ごうせい しています。', 'しょたいは「Zen Kaku Gothic New」(SIL Open Font License)です。'] );
+        else if (k === 7) await sayAll(['シャープワールド', 'えは、AIで つくった えを もとに しています。\nおんがくと こうかおんは、ゲームの なかで ごうせい しています。', 'しょたいは「Zen Kaku Gothic New」(SIL Open Font License)です。'] );
         else if (k === 8) await resetGame();
         else break;
       }
