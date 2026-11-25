@@ -227,16 +227,29 @@ const Art = (() => {
   }
 
   // srcs = { 種族id: 画像のURL }。読めなかった種族はコード描きの仮絵になる
+  // 同じ「絵の入れ物(canvas)」に 描きなおす(持っている側は そのまま使える)
+  const repaint = (old, fresh) => { old.width = fresh.width; old.height = fresh.height; old.getContext('2d').drawImage(fresh, 0, 0); };
+  let SRCS = {};
+  const load = (id) => new Promise((res) => {
+    const im = new Image();
+    im.onload = () => { try { if (id.startsWith('bg_')) bgs[id.slice(3)] = im; else { const c = removeBg(im, CUT[id] || { tol: 34, erode: 0 }); if (imgs[id]) repaint(imgs[id], c); else imgs[id] = c; } } catch (e) {} res(); };
+    im.onerror = () => res();
+    im.src = SRCS[id];
+  });
   function init(srcs) {
-    const load = (id) => new Promise((res) => {
-      const im = new Image();
-      im.onload = () => { try { if (id.startsWith('bg_')) bgs[id.slice(3)] = im; else imgs[id] = removeBg(im, CUT[id] || { tol: 34, erode: 0 }); } catch (e) {} res(); };
-      im.onerror = () => res();
-      im.src = srcs[id];
-    });
+    SRCS = srcs;
     return Promise.all(Object.keys(srcs).map(load)).then(() => {
       for (const id of SPECIES_ORDER) sprites[id] = makeSprite(id);
     });
+  }
+  // iPhoneは、裏に回ったアプリの canvas の中身を すてることがある。ぜんぶ 描きなおす
+  async function rebuild() {
+    await Promise.all(Object.keys(SRCS).filter((id) => !id.startsWith('bg_')).map(load));
+    for (const k in cache) delete cache[k]; // 地面の部品・木・家などは、次に使うときに 作られる
+    for (const id of SPECIES_ORDER) if (sprites[id]) repaint(sprites[id], makeSprite(id));
+    for (const [store, make] of [[portraits, portrait], [dots, dot], [shinies, shiny], [bgMade, (k) => { bg(k); return bgMade[k]; }]]) {
+      for (const k of Object.keys(store)) { const old = store[k]; delete store[k]; const fresh = make(k); if (old && fresh) { repaint(old, fresh); store[k] = old; } }
+    }
   }
 
   // ---------- 人物(ちびキャラ) ----------
@@ -633,5 +646,5 @@ const Art = (() => {
   }
 
   const raw = (id) => imgs[id] || null; // 背景を ぬいた、元の 大きさの絵(大きく 寄るとき用)
-  return { raw, S, TS, sprites, bg, portrait, dot, shiny, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
+  return { rebuild, raw, S, TS, sprites, bg, portrait, dot, shiny, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
 })();

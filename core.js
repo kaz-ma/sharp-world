@@ -473,6 +473,26 @@ function drawField() {
   if (ui.banner) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(VW / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, VW / 2, y + 17, { align: 'center', size: 16 }); } else ui.banner = null; }
 }
 
+// ---------- 裏から もどったとき、消えた絵を 描きなおす ----------
+// iPhoneは、ほかのアプリを使っているあいだに canvas の中身を すてることがある(地面・木・モンスターが 見えなくなる)
+const probeC = document.createElement('canvas'); probeC.width = probeC.height = 32; const probeG = probeC.getContext('2d', { willReadFrequently: true });
+function isBlank(c) { if (!c || !c.width) return false; try { probeG.clearRect(0, 0, 32, 32); probeG.drawImage(c, 0, 0, 32, 32); const d = probeG.getImageData(0, 0, 32, 32).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return false; return true; } catch (e) { return false; } }
+const artLost = () => !!Art.sprites.mikanya && [Art.sprites.mikanya, Art.sprites.pukurisu, GRAIN, world.map._cache].some(isBlank);
+let restoring = false;
+async function restoreArt() {
+  if (restoring || !Art.sprites.mikanya) return; restoring = true;
+  try { await Art.rebuild(); paintGrain(); for (const k in MAPS) delete MAPS[k]._cache; } catch (e) { console.error(e); }
+  restoring = false;
+}
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (artLost() || (hiddenAt && Date.now() - hiddenAt > 15000)) restoreArt(); // しばらく 離れていたら、念のため 描きなおす
+  setTimeout(() => { if (artLost()) restoreArt(); }, 900);
+});
+addEventListener('pageshow', (e) => { if (e.persisted) restoreArt(); });
+setInterval(() => { if (!document.hidden && artLost()) restoreArt(); }, 2500); // 見張り
+
 // ---------- メインループ ----------
 function resize() {
   const vw = window.innerWidth; let vh = window.innerHeight;
@@ -509,7 +529,9 @@ function tick(dt) {
   render();
 }
 // ---------- 画面全体の色の調子(90年代セルアニメ風): 青灰色の空気+夕方のあたたかい光+フィルムの粒子 ----------
-const GRAIN = (() => { const c = document.createElement('canvas'); c.width = 1056; c.height = 552; const x = c.getContext('2d'), d = x.createImageData(1056, 552); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return c; })();
+const GRAIN = document.createElement('canvas');
+function paintGrain() { GRAIN.width = 1056; GRAIN.height = 552; const x = GRAIN.getContext('2d'), d = x.createImageData(1056, 552); for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); }
+paintGrain();
 let gradeLevel = 2, manualGrade = false; // 2 ふつう / 1 かるい(色合いだけ) / 0 なし
 let gradeOn = true, gOx = 0, gOy = 0, gT = 0, warmDbg = null;
 // 旅が進むほど世界があたたかくなる: 0(青灰色のしずかな空気)→1(金色のやわらかい光)。いまはずかんとライバル戦の進み具合から決める
