@@ -192,13 +192,18 @@ function buildRoute() {
   };
 }
 
+// 町の 当たり判定は 絵に そろえる(列 = 絵の 横位置 ÷ 32)
+const LAMP_X = { town: [90, 330, 700, 980, 1190], town2: [110, 400, 690, 940, 1190], town3: [122, 402, 700, 962] };
+function blockLamps(t, id) { for (const x of LAMP_X[id]) { const c = Math.floor((x + 1) / 32); t[9][c] = '#'; t[10][c] = '#'; } } // 街灯の 柱が 立つ マス
+function openRoad(t, w) { rect(t, 0, 11, 1, 4, '.'); rect(t, w - 1, 11, 1, 4, '.'); } // 道の はば(11〜14行)の まま、町の 外へ 出られる
+
 // ひだまり町(仮): 背景は1枚の絵、歩ける場所は文字の図(# 歩けない / . 歩ける)で決める。絵が1280x736なら 40x23 タイル。
 function buildTown() {
   const w = 40, h = 23, t = blank(w, h, '.');
   rect(t, 0, 0, w, 7, '#'); rect(t, 0, 21, w, 2, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, w - 1, 0, 1, h, '#');
   for (const [x, ww] of [[4, 6], [13, 7], [24, 6], [33, 5]]) rect(t, x, 7, ww, 4, '#');
-  for (const x of [3, 12, 22, 32]) t[11][x] = '#';
-  rect(t, 0, 12, 1, 2, '.'); rect(t, w - 1, 12, 1, 2, '.');
+  for (const x of [3, 12, 22, 32]) rect(t, x, 7, 1, 5, '#'); // 電柱(上から 下まで)
+  blockLamps(t, 'town'); openRoad(t, w);
   return {
     id: 'town', name: 'ひだまり町', w, h, t, bg: 'town1', bgm: 'town', btheme: 'dusk', grass: null,
     lamps: [90, 330, 700, 980, 1190].map((x) => ({ x: x + 2, y: 298 })),
@@ -213,7 +218,7 @@ function buildTown() {
       { id: 'teacher', x: 28, y: 13, dir: 'l', pal: 'teacher', script: 'teacher', idle: true },
       { id: 'techie', x: 31, y: 13, dir: 'l', pal: 'techie', script: 'techie', trainer: true, sight: 4 },
     ],
-    warps: [{ x: 0, y: 12, to: 'route', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 12, to: 'route2', tx: 1, ty: 7, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }, { x: w - 1, y: 13, to: 'route2', tx: 1, ty: 8, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }],
+    warps: [{ x: 0, y: 11, to: 'route', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 12, to: 'route', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route', tx: 48, ty: 8, dir: 'l' }, { x: 0, y: 14, to: 'route', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 11, to: 'route2', tx: 1, ty: 7, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }, { x: w - 1, y: 12, to: 'route2', tx: 1, ty: 7, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }, { x: w - 1, y: 13, to: 'route2', tx: 1, ty: 8, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }, { x: w - 1, y: 14, to: 'route2', tx: 1, ty: 8, dir: 'r', needs: 'lit_town', needMsg: 'この さきへ いく まえに、この 町の あかりを ともしたい。\nあかり番の レンと しょうぶを してみよう。' }],
     lightText: ['ひだまり町の 街灯に、ひさしぶりに あかりが ともった。', 'どこかで、だれかが わらった ような きがした。'],
   };
 }
@@ -238,8 +243,7 @@ function buildTown2() {
   const w = 40, h = 23, t = blank(w, h, '.');
   rect(t, 0, 0, w, 7, '#'); rect(t, 0, 21, w, 2, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, w - 1, 0, 1, h, '#');
   for (const [x, ww] of [[3, 7], [12, 5], [22, 7], [32, 6]]) rect(t, x, 7, ww, 4, '#');
-  for (const x of [11, 20, 31]) t[11][x] = '#';
-  rect(t, 0, 12, 1, 2, '.'); rect(t, w - 1, 12, 1, 2, '.');
+  blockLamps(t, 'town2'); openRoad(t, w);
   const NEED2 = "この 町の あかりを ともさずに、さきへ すすむのは はやい きがする。\nあかり番の ナナと しょうぶを しよう。";
   return {
     id: 'town2', name: 'ミドリ団地', w, h, t, bg: 'town2', bgm: 'town', btheme: 'neon', grass: null,
@@ -253,7 +257,7 @@ function buildTown2() {
       { id: 'nboy', x: 17, y: 14, dir: 'l', pal: 'child', script: 'nboy', idle: true },
       { id: 'nana', x: 30, y: 13, dir: 'l', pal: 'nana', script: 'nana', trainer: true, sight: 4 },
     ],
-    warps: [{ x: 0, y: 12, to: 'route2', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route2', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 12, to: 'route3', tx: 1, ty: 7, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }, { x: w - 1, y: 13, to: 'route3', tx: 1, ty: 8, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }],
+    warps: [{ x: 0, y: 11, to: 'route2', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 12, to: 'route2', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route2', tx: 48, ty: 8, dir: 'l' }, { x: 0, y: 14, to: 'route2', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 11, to: 'route3', tx: 1, ty: 7, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }, { x: w - 1, y: 12, to: 'route3', tx: 1, ty: 7, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }, { x: w - 1, y: 13, to: 'route3', tx: 1, ty: 8, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }, { x: w - 1, y: 14, to: 'route3', tx: 1, ty: 8, dir: 'r', needs: 'lit_town2', needMsg: NEED2 }],
     lightText: ['ビニールハウスの 天井が、ぱっと ひかった。', 'ロボットたちが、ゆっくり うごきだす。'],
   };
 }
@@ -276,9 +280,8 @@ function buildRoute3() {
 // ナギサ港(仮): 霧の港町。灯台のあかりが消えている
 function buildTown3() {
   const w = 40, h = 23, t = blank(w, h, '.');
-  rect(t, 0, 0, w, 7, '#'); rect(t, 0, 15, w, 8, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, w - 1, 0, 1, h, '#'); // 15行目から下は 海(絵と そろえる)
-  for (const [x, ww] of [[3, 7], [12, 5], [22, 7], [32, 5]]) rect(t, x, 7, ww, 4, '#');
-  rect(t, 0, 12, 1, 2, '.'); rect(t, w - 1, 12, 1, 2, '.');
+  rect(t, 0, 0, w, 11, '#'); rect(t, 0, 15, w, 8, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, w - 1, 0, 1, h, '#'); // 歩けるのは 岸壁(11〜14行)。建物の うしろと 下は 海
+  openRoad(t, w);
   const NEED3 = 'この 港の あかりを ともさずに、さきへ すすむのは はやい きがする。\n灯台守の ゴロウと しょうぶを しよう。';
   return {
     id: 'town3', name: 'ナギサ港', w, h, t, bg: 'town3', bgm: 'town', btheme: 'harbor', grass: null, fog: 0.45,
@@ -292,7 +295,7 @@ function buildTown3() {
       { id: 'dockgirl', x: 19, y: 14, dir: 'l', pal: 'child', script: 'dockgirl', idle: true },
       { id: 'goro', x: 30, y: 13, dir: 'l', pal: 'goro', script: 'goro', trainer: true, sight: 4 },
     ],
-    warps: [{ x: 0, y: 12, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 12, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 13, to: 'end', needs: 'lit_town3', needMsg: NEED3 }],
+    warps: [{ x: 0, y: 11, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 12, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: 0, y: 14, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 11, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 12, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 13, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 14, to: 'end', needs: 'lit_town3', needMsg: NEED3 }],
     lightText: ['灯台の てっぺんで、おおきな あかりが ゆっくり まわりはじめた。', '霧の むこうから、船の ひびきが ちかづいてくる。'],
   };
 }
