@@ -13,7 +13,7 @@ const Aud = (() => {
         const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
       } catch (e) { ctx = null; }
     }
-    if (ctx && ctx.state === 'suspended') ctx.resume();
+    if (ctx && ctx.state !== 'running') { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } // iPhoneは 別のアプリから もどると とまる
     return ctx;
   }
   function tone(f, t0, dur, type = 'sine', vol = 0.18, f2 = null, dest = null) {
@@ -54,8 +54,12 @@ const Aud = (() => {
     get: () => arp([72, 79, 84], 0.09, 'triangle', 0.2, 0.3),
     run: () => { const t = ctx.currentTime; noise(t, 0.3, 0.12, 2800); tone(500, t, 0.3, 'sine', 0.07, 200); },
     win: () => arp([72, 72, 72, 76, 74, 79, 84], 0.13, 'triangle', 0.2, 0.3),
+    // オープニング: はじめの タップ / コマが 出る(i番目ほど 高い鈴の音) / 題字
+    opStart: () => { const t = ctx.currentTime; tone(mtof(69), t, 0.7, 'triangle', 0.14); tone(mtof(76), t + 0.09, 0.9, 'sine', 0.12); },
+    opPanel: (i = 0) => { const t = ctx.currentTime, n = [57, 60, 64, 67, 71][i % 5]; noise(t, 0.34, 0.12, 3600); tone(120, t + 0.4, 0.22, 'sine', 0.32, 48); tone(mtof(n), t + 0.4, 0.9, 'triangle', 0.15); tone(mtof(n + 12), t + 0.4, 0.6, 'sine', 0.07); },
+    opTitle: () => { const t = ctx.currentTime; noise(t, 0.6, 0.07, 5000); [45, 57, 64, 69, 71, 76].forEach((n, i) => tone(mtof(n), t + i * 0.035, 2.8, i < 2 ? 'sine' : 'triangle', i < 2 ? 0.16 : 0.08)); [81, 83, 88, 93].forEach((n, i) => tone(mtof(n), t + 0.35 + i * 0.13, 0.9, 'sine', 0.06)); },
   };
-  function sfx(name) { if (muted || !ensure() || !SFX[name]) return; try { SFX[name](); } catch (e) {} }
+  function sfx(name, arg) { if (muted || !ensure() || !SFX[name]) return; try { SFX[name](arg); } catch (e) {} }
 
   // ---- BGM: 8分音符のステップ列。melody/bassはMIDI番号、0は休み ----
   const SONGS = {
@@ -70,6 +74,12 @@ const Aud = (() => {
       mel: [69, 0, 0, 67, 65, 0, 62, 0, 67, 0, 0, 65, 62, 0, 0, 0, 72, 0, 0, 69, 67, 0, 65, 0, 69, 0, 67, 0, 62, 0, 0, 0],
       bass: [50, 0, 0, 0, 0, 0, 0, 0, 46, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 43, 0, 0, 0, 0, 0, 0, 0],
       mt: 'triangle', mv: 0.09, bt: 'sine', bv: 0.14,
+    },
+    title: { // タイトル画面: 静かで すこし さびしい
+      bpm: 66,
+      mel: [76, 0, 0, 0, 72, 0, 74, 0, 71, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 69, 0, 71, 0, 67, 0, 0, 0, 0, 0, 0, 0],
+      bass: [45, 0, 0, 0, 52, 0, 0, 0, 43, 0, 0, 0, 50, 0, 0, 0, 41, 0, 0, 0, 48, 0, 0, 0, 40, 0, 0, 0, 47, 0, 0, 0],
+      mt: 'triangle', mv: 0.08, bt: 'sine', bv: 0.13,
     },
     field: {
       bpm: 104,
@@ -108,6 +118,10 @@ const Aud = (() => {
     ensure(); if (ctx && cur && !timer) { nextT = ctx.currentTime + 0.05; timer = setInterval(sched, 60); }
   }
   function stop() { cur = null; }
+  function unlock() { // 画面に ふれた瞬間に 呼ぶ(iPhoneは、これをしないと 音が出ない)
+    start(); if (!ctx) return;
+    try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
+  }
   function setMute(m) { muted = m; try { localStorage.setItem('mofu.mute', m ? '1' : '0'); } catch (e) {} if (master) master.gain.value = m ? 0 : 0.5; if (!m) { ensure(); if (ctx) nextT = ctx.currentTime + 0.05; } }
-  return { sfx, bgm, start, stop, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
+  return { sfx, bgm, start, stop, unlock, get state() { return ctx ? ctx.state : 'none'; }, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
 })();

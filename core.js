@@ -67,6 +67,9 @@ addEventListener('keyup', (e) => {
 });
 addEventListener('blur', () => { dirStack.length = 0; padDir = null; runHeld = false; });
 
+// 音の じゅんび: iPhoneは「指を はなした瞬間」などでないと 音を はじめられない
+for (const ev of ['pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, () => { if (Aud.state !== 'running') Aud.unlock(); }, true);
+
 const touch = document.getElementById('touch'), stickEl = document.getElementById('stick');
 let stick = null, repT = 0;
 function toLogical(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * VW - OX, (e.clientY - r.top) / r.height * H]; }
@@ -527,6 +530,7 @@ function render() {
   if (mode === 'field') drawField();
   else if (mode === 'title') drawTitle(); // タイトルと オープニングは 画面の はばいっぱいに かく
   else if (mode === 'opening') drawOpening();
+  else if (mode === 'start') drawStart();
   else { g.save(); g.translate(OX, 0); if (mode === 'battle') drawBattle(); else if (mode === 'ending') drawEnding(); g.restore(); g.restore(); smearEdges(); g.save(); }
   g.restore();
   if (gradeOn && (mode === 'field' || mode === 'battle')) grade();

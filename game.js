@@ -413,6 +413,31 @@ const OP_T0 = 0.35, OP_STEP = 0.5, OP_DUR = 0.46, OP_TITLE = 3.15, OP_END = 5.9;
 const easeOut = (k) => 1 - Math.pow(1 - k, 3);
 const calmMotion = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 let opT = 0, opLanded = 0;
+// いちばん最初の画面。ここで タップしてもらうと、音が 出せるようになる
+let startAt = 0, startFlare = 0;
+function drawStart() {
+  const t = clock - startAt, cx = VW / 2, cy = 142, pulse = 0.5 + 0.5 * Math.sin(t * 1.8);
+  g.fillStyle = '#0f1128'; g.fillRect(0, 0, VW, H);
+  for (let i = 0; i < 34; i++) { const a = 0.25 + 0.55 * Math.abs(Math.sin(t * (0.5 + (i % 5) * 0.17) + i * 1.9)); const hs = (n) => { const v = Math.sin(n * 91.7 + 3.1) * 43758.5; return v - Math.floor(v); }; Art.star(g, hs(i) * VW, 10 + hs(i + 50) * 320, 0.9 + (i % 3) * 0.5, `rgba(255,244,214,${a * 0.7})`); }
+  const r = 120 + pulse * 18 + startFlare * 420, gr = g.createRadialGradient(cx, cy, 2, cx, cy, r);
+  gr.addColorStop(0, `rgba(255,224,164,${0.75 + startFlare * 0.25})`); gr.addColorStop(0.3, `rgba(255,170,100,${0.26 + pulse * 0.1 + startFlare * 0.4})`); gr.addColorStop(1, 'rgba(255,150,90,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, VW, H);
+  g.fillStyle = '#fff6d6'; g.beginPath(); g.arc(cx, cy, 9 + pulse * 1.5 + startFlare * 10, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = clamp(t / 0.8, 0, 1) * (1 - startFlare);
+  g.save(); g.globalAlpha *= 0.55 + 0.45 * pulse; txt('タップして はじめる', cx, 252, { size: 22, w: 900, align: 'center', color: '#fbf0da', stroke: '#141028', sw: 6 }); g.restore();
+  txt(Aud.muted ? '(おとは 「せってい」で オフに なっています)' : '♪ おとが でます', cx, 284, { size: 12, align: 'center', color: '#c9bdd8' });
+  g.globalAlpha = 1;
+}
+async function startScreen() {
+  mode = 'start'; startAt = clock; startFlare = 0;
+  await new Promise((resolve) => { // pointerdown では iPhoneが 音を 許さないので、指を はなした瞬間で すすむ
+    const evs = ['pointerup', 'touchend', 'click', 'keydown'];
+    const go = () => { evs.forEach((ev) => removeEventListener(ev, go, true)); Aud.unlock(); resolve(); };
+    evs.forEach((ev) => addEventListener(ev, go, true));
+  });
+  Aud.sfx('opStart'); await anim(0.55, (k) => { startFlare = k * k; }); await fade(1, 0.25, '#191527');
+  mode = 'opening'; opT = 1e9; ui.fade = 0;
+}
 function drawOpening() {
   const t = clock - opT;
   g.fillStyle = '#191527'; g.fillRect(0, 0, VW, H);
@@ -442,11 +467,16 @@ function drawOpening() {
   if (t > 0.8) txt('タップで スキップ', VW - 14, 15, { size: 11, align: 'right', color: '#f7f5f1', stroke: 'rgba(25,21,39,.8)', sw: 4 });
 }
 async function openingScene() {
-  mode = 'opening'; opT = clock + 1e9; opLanded = 0; // 絵が そろうまでは まっくら
+  mode = 'opening'; opT = clock + 1e9; opLanded = 0; Aud.bgm(null); // 絵が そろうまでは まっくら
   await Promise.race([loadOp(), sleep(5)]);
   if (!OP_IDS.every((id) => OP[id])) { mode = 'title'; return; } // 絵が 読めないときは とばす
-  opT = clock; flushBtn(); let skipped = false;
-  while (clock - opT < OP_END) { await nextFrame(); if (btnQ.length) { btnQ.length = 0; skipped = true; break; } }
+  opT = clock; flushBtn(); let skipped = false, panels = 0, titled = false;
+  while (clock - opT < OP_END) {
+    await nextFrame(); if (btnQ.length) { btnQ.length = 0; skipped = true; break; }
+    const t = clock - opT; // 絵の動きに あわせて 音を 鳴らす
+    if (panels < 5 && t >= OP_T0 + panels * OP_STEP) Aud.sfx('opPanel', panels++);
+    if (!titled && t >= OP_TITLE) { titled = true; Aud.sfx('opTitle'); }
+  }
   await fade(1, skipped ? 0.25 : 0.7, '#000'); // 暗転
   mode = 'title'; await sleep(skipped ? 0.1 : 0.3); flushBtn(); fade(0, 0.8);
 }
@@ -468,7 +498,7 @@ async function endingScene() {
   Aud.sfx('win'); await fade(1, 0.8, '#10202a'); mode = 'ending'; endT = clock; ui.dialog = null; flushBtn(); await fade(0, 0.8);
   await sleep(4.5); await say('この 旅は まだ はじまったばかり。\nゲートの むこうには、どんな 町と モンスターが まっているのだろう…。', { w: 616 });
   await sleep(0.3); flushBtn(); await nextBtn();
-  await fade(1, 0.6); mode = 'title'; Aud.bgm('field'); await fade(0, 0.5); await titleScreen();
+  await fade(1, 0.6); mode = 'title'; Aud.bgm('title'); await fade(0, 0.5); await titleScreen();
 }
 function drawEnding() {
   const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#1d2f4d'); sky.addColorStop(0.6, '#5b5a8f'); sky.addColorStop(1, '#f2a67c'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
@@ -501,7 +531,7 @@ async function continueGame() {
   await fade(1, 0.4); mode = 'field'; enterMap(S.map, S.x, S.y, S.dir, true); ui.banner = { text: world.map.name, t0: clock }; await fade(0, 0.5);
 }
 async function titleScreen() {
-  mode = 'title'; busy = false; Aud.bgm('field');
+  mode = 'title'; busy = false; Aud.bgm('title');
   for (;;) {
     const c = await choose(['はじめから', { label: 'つづきから', off: !hasSave() }, 'セーブを よみこむ'], { x: 50, y: 293, w: 540, cols: 3, cancel: false }); // 下端は iPhoneの線の ぶん あける
     if (c === 0) { await newGame(); return; }
@@ -516,7 +546,7 @@ let ema = 0.016, slowN = 0;
 function loop(t) {
   const raw = (t - lastT) / 1000, dt = Math.min(0.05, raw); lastT = t;
   // 重い端末では、画面の演出を自動でかるくする(手動で選んだときは そのまま)
-  if (!manualGrade && mode !== 'title' && mode !== 'opening') { ema = ema * 0.96 + Math.min(raw, 0.2) * 0.04; if (ema > 0.036 && gradeLevel > 0) { if (++slowN > 90) { gradeLevel--; slowN = 0; ema = 0.025; } } else slowN = 0; }
+  if (!manualGrade && (mode === 'field' || mode === 'battle')) { ema = ema * 0.96 + Math.min(raw, 0.2) * 0.04; if (ema > 0.036 && gradeLevel > 0) { if (++slowN > 90) { gradeLevel--; slowN = 0; ema = 0.025; } } else slowN = 0; }
   tick(dt); requestAnimationFrame(loop);
 }
 (async () => {
@@ -524,8 +554,8 @@ function loop(t) {
   try { await Promise.race([document.fonts.load('700 16px "Zen Kaku Gothic New"'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) {}
   try { const o = JSON.parse(localStorage.getItem('mofu.opts') || '{}'); if (o.gl != null) { gradeLevel = o.gl; manualGrade = true; } } catch (e) {}
   await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
-  mode = 'opening'; opT = 1e9; lastT = performance.now(); requestAnimationFrame(loop);
-  await openingScene(); await titleScreen();
+  mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
+  await startScreen(); await openingScene(); await titleScreen();
 })();
 
 if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(location.hostname)) { // 開発用(自分のパソコンでだけ)
@@ -534,7 +564,7 @@ if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(locat
     async advance(sec) { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) { tick(1 / 60); for (let j = 0; j < 12; j++) await null; } },
     grade(v) { gradeOn = v; }, warm(v) { warmDbg = v; },
     grid(v) { showGrid = v; },
-    openingScene, cutin, setSpeaker, say, event, lightTown, boxMenu, addBond, bondLv, petFollower, goalInfo, questTalk, goFishing, learnMove, evolveCheck, movesOf, relearnable,
+    openingScene, Aud, cutin, setSpeaker, say, event, lightTown, boxMenu, addBond, bondLv, petFollower, goalInfo, questTalk, goFishing, learnMove, evolveCheck, movesOf, relearnable,
     hold(d) { dirStack.length = 0; if (d) dirStack.push(d); },
     warp(id, x, y, dir) { enterMap(id, x, y, dir || 'r', true); },
     encounter(sp, lv, sh) { event(async () => { await flashFx(1); await fade(1, 0.2, '#000'); const foe = mkMon(sp, lv); if (sh) foe.shiny = true; const r = await runBattle({ foes: [foe] }); await afterBattle(r); }); },
