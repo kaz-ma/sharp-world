@@ -316,18 +316,29 @@ async function goalScreen() {
 // ---------- セーブの うつしかえ(コードを コピー・ペースト) ----------
 function encodeSave() { return 'SW1:' + btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
 function decodeSave(code) {
-  const t = String(code || '').trim(); if (!t.startsWith('SW1:')) throw new Error('コードが ただしく ないみたい');
-  const d = JSON.parse(decodeURIComponent(escape(atob(t.slice(4))))); if (!d || !Array.isArray(d.party) || !d.party.length) throw new Error('セーブデータが みつからない');
+  // 改行・空白・全角の文字が まじっても、前後に ほかの文が あっても 読めるようにする
+  const t = String(code || '').normalize('NFKC').replace(/[\s\u200B-\u200D\u2060\uFEFF]+/g, '');
+  if (!t) throw new Error('なにも はりつけられていないよ。「はりつける」を おしてね。');
+  const i = t.toUpperCase().indexOf('SW1:');
+  if (i < 0) throw new Error(`セーブの コードでは ないみたい(はじめが「${t.slice(0, 14)}」)。コードは「SW1:」で はじまるよ。`);
+  const body = t.slice(i + 4).match(/^[A-Za-z0-9+/]*={0,2}/)[0];
+  let d; try { d = JSON.parse(decodeURIComponent(escape(atob(body)))); } catch (e) { throw new Error(`コードが とちゅうで きれているみたい(${body.length}もじ)。もういちど ぜんぶ コピーしてね。`); }
+  if (!d || !Array.isArray(d.party) || !d.party.length) throw new Error('なかまが いない セーブデータだよ。ぼうけんを はじめてから かきだしてね。');
   return d;
 }
 function transferWindow(mode, code) {
   return new Promise((resolve) => {
-    const box = document.getElementById('xfer'), ta = document.getElementById('xta'), msg = document.getElementById('xmsg'), cp = document.getElementById('xcopy'), ok = document.getElementById('xok'), cl = document.getElementById('xclose');
-    document.getElementById('xtitle').textContent = mode === 'out' ? '下の コードを コピーして、メモなどに とっておいてね。ほかの 場所では「セーブを よみこむ」で つかえるよ。' : '「かきだし」で とっておいた コードを、ここに はりつけてね。';
-    ta.value = code || ''; ta.readOnly = mode === 'out'; msg.textContent = ''; cp.style.display = mode === 'out' ? '' : 'none'; ok.style.display = mode === 'in' ? '' : 'none';
+    const box = document.getElementById('xfer'), ta = document.getElementById('xta'), msg = document.getElementById('xmsg'), cp = document.getElementById('xcopy'), ok = document.getElementById('xok'), cl = document.getElementById('xclose'), ps = document.getElementById('xpaste');
+    document.getElementById('xtitle').textContent = mode === 'out' ? '下の コードを コピーして、メモなどに とっておいてね。ほかの 場所では「セーブを よみこむ」で つかえるよ。' : '「かきだし」で コピーした コードを、「はりつける」で 入れて、「よみこむ」を おしてね。';
+    ta.value = code || ''; ta.readOnly = mode === 'out'; msg.textContent = ''; cp.style.display = mode === 'out' ? '' : 'none'; ok.style.display = ps.style.display = mode === 'in' ? '' : 'none';
+    if (mode === 'out') msg.textContent = `ぜんぶで ${ta.value.length}もじ`;
     box.classList.remove('hidden'); setTimeout(() => { if (mode === 'out') { ta.focus(); ta.select(); } }, 50);
-    const done = (v) => { box.classList.add('hidden'); cp.onclick = ok.onclick = cl.onclick = null; resolve(v); };
-    cp.onclick = async () => { try { await navigator.clipboard.writeText(ta.value); msg.textContent = 'コピーしたよ!'; } catch (e) { ta.focus(); ta.select(); msg.textContent = 'うまく コピーできない。コードを ながおしして コピーしてね。'; } };
+    const done = (v) => { box.classList.add('hidden'); cp.onclick = ok.onclick = cl.onclick = ps.onclick = null; resolve(v); };
+    ps.onclick = async () => { // iPhoneでは 小さな「ペースト」が 出るので、それを おす
+      try { const t = await navigator.clipboard.readText(); if (!t) throw new Error('empty'); ta.value = t; msg.textContent = `${t.trim().length}もじ はりつけたよ。「よみこむ」を おしてね。`; }
+      catch (e) { ta.focus(); msg.textContent = 'はりつけられなかった。上の 欄を ながおしして「ペースト」を えらんでね。'; }
+    };
+    cp.onclick = async () => { try { await navigator.clipboard.writeText(ta.value); msg.textContent = `コピーしたよ!(${ta.value.length}もじ)`; } catch (e) { ta.focus(); ta.select(); msg.textContent = 'うまく コピーできない。コードを ながおしして コピーしてね。'; } };
     ok.onclick = () => { try { const d = decodeSave(ta.value); try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch (e) { throw new Error('この ブラウザには ほぞんできない'); } msg.textContent = 'よみこんだよ! はじめから やりなおすよ…'; setTimeout(() => location.reload(), 700); } catch (e) { msg.textContent = e.message || 'よみこめなかった'; } };
     cl.onclick = () => done(false);
   });
