@@ -54,6 +54,25 @@ const Aud = (() => {
     get: () => arp([72, 79, 84], 0.09, 'triangle', 0.2, 0.3),
     run: () => { const t = ctx.currentTime; noise(t, 0.3, 0.12, 2800); tone(500, t, 0.3, 'sine', 0.07, 200); },
     win: () => arp([72, 72, 72, 76, 74, 79, 84], 0.13, 'triangle', 0.2, 0.3),
+    // バトル: 技を はなつ音 / 当たる音(タイプごと)
+    cast: (ty) => { const t = ctx.currentTime;
+      if (ty === 'leaf') { for (let i = 0; i < 6; i++) wash(t + i * 0.05, 0.09, 0.09, 2500, 8000, 0.02); voice(500, t, { f2: 900, d: 0.3, vol: 0.04 }); }
+      else if (ty === 'fire') { wash(t, 0.55, 0.2, 100, 1800, 0.2); voice(110, t, { type: 'sawtooth', f2: 240, d: 0.45, vol: 0.06, lp: 900 }); }
+      else if (ty === 'water') { wash(t, 0.45, 0.14, 600, 3500, 0.08); for (let i = 0; i < 6; i++) voice(420 + i * 90, t + i * 0.055, { f2: 900 + i * 130, ft: 0.06, d: 0.09, vol: 0.06 }); }
+      else if (ty === 'volt') { for (let i = 0; i < 9; i++) voice(900 + (i * 457) % 1400, t + i * 0.032, { type: 'square', d: 0.03, vol: 0.05 }); voice(200, t, { type: 'sawtooth', f2: 1400, d: 0.32, vol: 0.05 }); }
+      else if (ty === 'metal') { [1180, 1760, 2330].forEach((f, k) => voice(f, t + k * 0.05, { type: 'triangle', d: 0.18, vol: 0.06 })); wash(t, 0.25, 0.07, 4000, 11000, 0.05); }
+      else wash(t, 0.22, 0.14, 700, 5000, 0.09);
+    },
+    boom: (ty) => { const t = ctx.currentTime;
+      if (ty === 'leaf') { wash(t, 0.14, 0.2, 3000, 10000, 0.003); wash(t + 0.09, 0.14, 0.16, 3500, 10000, 0.003); }
+      else if (ty === 'fire') { wash(t, 0.6, 0.3, 40, 1200, 0.005); voice(90, t, { f2: 35, d: 0.45, vol: 0.3 }); }
+      else if (ty === 'water') { wash(t, 0.45, 0.24, 500, 5000, 0.01); voice(300, t, { f2: 90, d: 0.2, vol: 0.14 }); }
+      else if (ty === 'volt') { wash(t, 0.35, 0.28, 1500, 12000, 0.002); voice(70, t, { type: 'square', f2: 45, d: 0.4, vol: 0.12, lp: 500 }); for (let i = 0; i < 7; i++) voice(1600 - i * 160, t + i * 0.035, { type: 'square', d: 0.03, vol: 0.05 }); }
+      else if (ty === 'metal') { [523, 784, 1245, 1865, 2637].forEach((f, k) => voice(f, t, { type: k % 2 ? 'sine' : 'triangle', d: 0.7 - k * 0.08, vol: 0.09, a: 0.002 })); wash(t, 0.08, 0.18, 3000, 12000, 0.002); }
+      else { kick(t, 0.3); wash(t, 0.12, 0.16, 800, 4000, 0.002); }
+    },
+    cutin: () => { const t = ctx.currentTime; wash(t, 0.4, 0.18, 600, 9000, 0.28); kick(t + 0.28, 0.45); [45, 52, 57].forEach((n) => synth(n, t + 0.28, 0.07, 1.1, 2400)); voice(mtof(81), t + 0.28, { type: 'square', d: 0.5, vol: 0.04, echo: true }); },
+    victory: () => { const t = ctx.currentTime; [[67, 0], [72, 0.11], [76, 0.22], [79, 0.33], [76, 0.5], [79, 0.62], [84, 0.74]].forEach(([n, at], i) => { synth(n, t + at, 0.055, i === 6 ? 1.2 : 0.16, 3400); musicbox(n + 12, t + at, 0.05); }); [48, 55, 60, 64].forEach((n) => synth(n, t + 0.74, 0.04, 1.2, 2200)); kick(t, 0.3); kick(t + 0.5, 0.3); kick(t + 0.74, 0.4); wash(t + 0.74, 1.0, 0.1, 4000, 12000, 0.005); },
     // あかりの場面: 街灯が ともる(i番目ほど 高い音) / ぜんぶ ともった しゅんかん
     lampOn: (i = 0) => { const t = ctx.currentTime, n = [64, 67, 69, 71, 76, 79][i % 6]; wash(t, 0.05, 0.12, 2500, 9000, 0.002); musicbox(n + 12, t + 0.14, 0.1); synth(n - 12, t + 0.14, 0.04, 0.7, 2200); voice(90, t + 0.14, { f2: 55, d: 0.3, vol: 0.2 }); },
     lightBurst: () => { const t = ctx.currentTime; kick(t, 0.4); wash(t, 2.2, 0.14, 3500, 12000, 0.01); [41, 53, 57, 60, 64, 67].forEach((n) => synth(n, t, 0.045, 2.6, 3200)); [72, 76, 79, 84, 88, 91].forEach((n, k) => musicbox(n, t + 0.1 + k * 0.1, 0.08)); },
@@ -170,6 +189,26 @@ const Aud = (() => {
     musicbox(ch[[0, 1, 2, 3, 2, 3, 1, 2][s]] + 12, t, 0.035);
     const m = [72, 0, 76, 0, 81, 0, 79, 0, 79, 0, 74, 0, 71, 0, 74, 0, 76, 0, 79, 0, 83, 0, 79, 0, 81, 0, 0, 0, 76, 0, 0, 0][i]; if (m) synth(m, t, 0.035, dt * 2.4, 2600);
   } };
+  // モンスターの 鳴き声(どれも その場で 合成)。進化後は 低く 長く。down: たおれる とき
+  const CRY = {
+    mikanya: (t, p, l) => { voice(620 * p, t, { type: 'triangle', f2: 920 * p, ft: 0.11 * l, d: 0.13 * l, vol: 0.12 }); voice(940 * p, t + 0.12 * l, { type: 'triangle', f2: 520 * p, d: 0.32 * l, vol: 0.13, vib: true }); },
+    pukurisu: (t, p, l) => { [0, 0.07, 0.14, 0.24].forEach((a, i) => voice((1250 + i * 90) * p, t + a * l, { type: 'square', f2: (1700 + i * 60) * p, ft: 0.04, d: 0.06 * l, vol: 0.055, lp: 4000 })); },
+    hinatagaeru: (t, p, l) => { [0, 0.2].forEach((a) => { for (let i = 0; i < 6; i++) voice((170 - i * 5) * p, t + (a + i * 0.022) * l, { type: 'sawtooth', d: 0.03 * l, vol: 0.13, lp: 1100 }); }); },
+    hotaruusagi: (t, p, l) => { musicbox(88 + Math.round(12 * Math.log2(p)), t, 0.09); musicbox(93 + Math.round(12 * Math.log2(p)), t + 0.1 * l, 0.08); voice(700 * p, t, { f2: 1150 * p, d: 0.2 * l, vol: 0.07 }); },
+    kinokokko: (t, p, l) => { voice(330 * p, t, { f2: 190 * p, d: 0.16 * l, vol: 0.2 }); voice(260 * p, t + 0.18 * l, { f2: 150 * p, d: 0.24 * l, vol: 0.18 }); },
+    shizukufin: (t, p, l) => { [0, 0.09, 0.19].forEach((a, i) => voice((420 + i * 160) * p, t + a * l, { f2: (900 + i * 260) * p, ft: 0.07 * l, d: 0.11 * l, vol: 0.12, echo: true })); },
+    birisuzume: (t, p, l) => { [0, 0.08, 0.16].forEach((a) => voice(2100 * p, t + a * l, { type: 'square', f2: 1500 * p, d: 0.05 * l, vol: 0.05 })); for (let i = 0; i < 5; i++) voice((900 + (i * 331) % 900) * p, t + (0.25 + i * 0.02) * l, { type: 'square', d: 0.02, vol: 0.04 }); },
+    hanedoron: (t, p, l) => { for (let i = 0; i < 12; i++) voice((i % 2 ? 330 : 300) * p, t + i * 0.028 * l, { type: 'sawtooth', d: 0.035 * l, vol: 0.08, lp: 2200 }); voice(1400 * p, t + 0.34 * l, { type: 'square', d: 0.07 * l, vol: 0.05 }); },
+    hikaritanishi: (t, p, l) => { voice(480 * p, t, { f2: 720 * p, d: 0.55 * l, vol: 0.1, a: 0.15, vib: true, echo: true }); voice(962 * p, t + 0.1 * l, { d: 0.35 * l, vol: 0.04, a: 0.1, echo: true }); },
+    sabikani: (t, p, l) => { [0, 0.09, 0.15].forEach((a) => { voice(1500 * p, t + a * l, { type: 'triangle', d: 0.05, vol: 0.12, a: 0.001 }); wash(t + a * l, 0.04, 0.1, 3000, 9000, 0.001); }); voice(180 * p, t + 0.22 * l, { type: 'sawtooth', f2: 130 * p, d: 0.2 * l, vol: 0.09, lp: 800 }); },
+    kirikamome: (t, p, l) => { [0, 0.24].forEach((a) => voice(1150 * p, t + a * l, { type: 'sawtooth', f2: 720 * p, d: 0.22 * l, vol: 0.07, lp: 2600, vib: true, echo: true })); },
+    funenko: (t, p, l) => { voice(130 * p, t, { type: 'sawtooth', d: 0.6 * l, vol: 0.11, a: 0.08, lp: 700 }); voice(98 * p, t, { type: 'sawtooth', d: 0.6 * l, vol: 0.1, a: 0.08, lp: 600 }); },
+  };
+  function cry(id, down) {
+    if (muted || !ensure() || typeof SPECIES === 'undefined' || !SPECIES[id]) return;
+    const base = SPECIES[id].from, f = CRY[id] || CRY[base]; if (!f) return;
+    try { f(ctx.currentTime + 0.01, (base ? 0.76 : 1) * (down ? 0.62 : 1), (base ? 1.3 : 1) * (down ? 1.5 : 1)); } catch (e) {}
+  }
   function sched() {
     if (!ctx || !cur || muted) return;
     const s = SONGS[cur], dt = 60 / s.bpm / 2;
@@ -200,5 +239,5 @@ const Aud = (() => {
     try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
   }
   function setMute(m) { muted = m; try { localStorage.setItem('mofu.mute', m ? '1' : '0'); } catch (e) {} if (master) master.gain.value = m ? 0 : 0.5; if (!m) { ensure(); if (ctx) nextT = ctx.currentTime + 0.05; } }
-  return { sfx, bgm, start, stop, unlock, setTheme, get theme() { return themeKey; }, get state() { return ctx ? ctx.state : 'none'; }, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
+  return { sfx, cry, bgm, start, stop, unlock, setTheme, get theme() { return themeKey; }, get state() { return ctx ? ctx.state : 'none'; }, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
 })();

@@ -128,6 +128,7 @@ const nameW = (s) => { g.font = `700 16px ${FONT}`; return g.measureText(s).widt
 function drawFx() {
   for (const f of bt.fx) {
     const k = (clock - f.t0) / f.d; if (k < 0 || k > 1) continue;
+    if (f.draw) { g.save(); f.draw(k); g.restore(); continue; }
     g.save(); g.globalAlpha = 1 - k * k;
     for (let i = 0; i < 9; i++) {
       const a = i / 9 * 6.283 + f.t0 * 3, r = 10 + k * 46;
@@ -143,10 +144,12 @@ function drawFx() {
 function drawBattle() {
   const b = bt; if (!b) return;
   battleBG();
+  if (b.dim > 0.01) { g.fillStyle = `rgba(14,10,30,${b.dim})`; g.fillRect(0, 0, W, H); } // 技の あいだは 背景を 暗く
   if (b.foe) drawMon(b.foe.sp, 462, 168, 122, b.es, 1.3, b.foe.shiny);
   if (b.me) drawMon(b.me.sp, 158, 262, 156, b.ps, 0, b.me.shiny);
   if (b.ball && b.ball.vis) Art.ball(g, b.ball.x, b.ball.y, b.ball.r || 14, b.ball.rot);
   drawFx();
+  if (b.flash) { const k = (clock - b.flash.t0) / 0.22; if (k < 1) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(${b.flash.rgb},${b.flash.a * (1 - k)})`; g.fillRect(0, 0, W, H); g.restore(); } else b.flash = null; }
   if (b.foe && b.showInfo) infoBox(14, 14, 236, b.foe, b.hpE, false);
   if (b.me && b.showInfo) { b.expF += (b.expT - b.expF) * 0.14; infoBox(376, 192, 252, b.me, b.hpM, true, b.expF); }
 }
@@ -158,8 +161,8 @@ async function tweenHP(side, to) {
   await anim(dur, (k) => { b[key] = lerp(from, to, ease(k)); });
 }
 const firstAlive = () => S.party.find((m) => m.hp > 0);
-async function popIn(st) { st.vis = true; Aud.sfx('warp'); await anim(0.45, (k) => { const e = k < 0.7 ? ease(k / 0.7) * 1.12 : 1.12 - (k - 0.7) / 0.3 * 0.12; st.sx = st.sy = e; st.a = Math.min(1, k * 2); st.flash = (1 - k) * 0.8; }); st.sx = st.sy = 1; st.a = 1; st.flash = 0; }
-async function slideIn(st) { st.vis = true; st.a = 1; await anim(0.55, (k) => { st.ox = (1 - ease(k)) * 280; }); st.ox = 0; }
+async function popIn(st) { st.vis = true; Aud.sfx('warp'); if (bt && bt.me) setTimeout(() => bt && Aud.cry((st === bt.ps ? bt.me : bt.foe).sp), 220); await anim(0.45, (k) => { const e = k < 0.7 ? ease(k / 0.7) * 1.12 : 1.12 - (k - 0.7) / 0.3 * 0.12; st.sx = st.sy = e; st.a = Math.min(1, k * 2); st.flash = (1 - k) * 0.8; }); st.sx = st.sy = 1; st.a = 1; st.flash = 0; }
+async function slideIn(st) { st.vis = true; st.a = 1; await anim(0.55, (k) => { st.ox = (1 - ease(k)) * 280; }); st.ox = 0; Aud.cry(bt.foe.sp); }
 
 const keyOf = (m) => (m === bt.me ? 'hpM' : 'hpE');
 const nm = (m) => (m === bt.me ? nameOf(m) : fname());
@@ -183,9 +186,10 @@ const accMult = (m) => (['clear', 'mist'].includes(abOf(m)) ? 0.9 : 1);
 async function statusMove(side, A, D, mv, as) {
   const dir = side === 'me' ? 1 : -1;
   await anim(0.25, (k) => { as.oy = -16 * Math.sin(k * 3.14); });
-  as.oy = 0;
+  as.oy = 0; Aud.cry(A.sp);
   if (mv.tgt === 'foe' && Math.random() * 100 >= mv.a * accMult(D)) { Aud.sfx('miss'); await msg('しかし うまくいかなかった!', 0.7); return; }
   const T = mv.tgt === 'self' ? A : D;
+  statusFx(mv, side); await sleep(0.5);
   if (mv.status) { if (!(await applyStatus(T, mv.status))) await msg('しかし うまくいかなかった!', 0.7); }
   if (mv.stage) for (const [k, v] of Object.entries(mv.stage)) await changeStage(T, k, v);
   if (mv.heal) {
@@ -206,17 +210,23 @@ async function doMove(side, A, D, mv) {
   await msg(`${an}の ${mv.n}!`, 0.2);
   if (mv.cat === 's') { await statusMove(side, A, D, mv, as); return; }
   const dir = side === 'me' ? 1 : -1;
+  await dimBattle(mv.p >= 55 ? 0.5 : 0.3);
   await anim(0.16, (k) => { as.ox = dir * 38 * Math.sin(k * 1.57); as.oy = -dir * 12 * Math.sin(k * 1.57); });
   const dodged = D === b.me && bondLv(D) >= 2 && Math.random() < 0.08;
-  if (dodged || Math.random() * 100 >= mv.a * accMult(D)) {
+  const missed = dodged || Math.random() * 100 >= mv.a * accMult(D);
+  await sleep(castFx(mv, side, missed));
+  if (missed) {
+    dimBattle(0);
     await anim(0.2, (k) => { as.ox = dir * 38 * (1 - k); as.oy = -dir * 12 * (1 - k); }); as.ox = as.oy = 0;
     Aud.sfx('miss'); if (dodged) { await anim(0.2, (k) => { ds.ox = -dir * 30 * Math.sin(k * 3.14); }); ds.ox = 0; await msg(`${nameOf(D)}は あなたの こえに こたえて、ひらりと よけた! ♥`, 0.8); } else await msg('しかし こうげきは はずれた!', 0.6); return;
   }
   const r = calcDmg(A, D, mv), tx = side === 'me' ? 462 : 158, ty = side === 'me' ? 118 : 218;
   S.effSeen = S.effSeen || {}; S.effSeen[mv.t + '>' + typeOf(D)] = r.eff; // いちど体験した相性は おぼえる
   if (D === b.me && bondLv(D) >= 4 && !D.endured && D.hp > 1 && D.hp - r.dmg <= 0) { r.dmg = D.hp - 1; D.endured = true; r.endure = true; }
-  addFx(mv.t === 'normal' ? 'star' : mv.t, tx, ty, 0.6);
-  Aud.sfx(r.eff > 1 ? 'super' : r.eff < 1 ? 'weak' : 'hit'); if (r.eff > 1 || r.crit) ui.shake = 7; else if (r.eff === 1) ui.shake = 2.5;
+  impactFx(mv, side, r);
+  Aud.sfx(r.eff > 1 ? 'super' : r.eff < 1 ? 'weak' : 'hit'); if (r.eff > 1 || r.crit) ui.shake = 10; else if (r.eff === 1) ui.shake = 4;
+  ds.flash = 0.95; await sleep(r.eff > 1 || r.crit ? 0.16 : 0.07); // 当たった しゅんかん、一瞬 止める
+  dimBattle(0, 0.35);
   const key = side === 'me' ? 'hpE' : 'hpM'; D.hp = Math.max(0, D.hp - r.dmg);
   const hp0 = b[key], hp1 = D.hp;
   await anim(0.3, (k) => {
@@ -226,7 +236,7 @@ async function doMove(side, A, D, mv) {
   });
   as.ox = as.oy = 0; ds.ox = 0; ds.flash = 0; b[key] = hp1;
   if (r.endure) await msg(`${nameOf(D)}は あなたの ために こらえた! ♥`, 0.9);
-  if (r.crit) await msg('きゅうしょに あたった!', 0.5);
+  if (r.crit) await msg('きゅうしょに あたった!', 0.4);
   if (r.eff > 1) await msg('こうかは ばつぐんだ!', 0.6); else if (r.eff < 1) await msg('こうかは いまひとつのようだ…', 0.6);
   if (D.hp > 0 && A.hp > 0) {
     const ad = abOf(D);
@@ -258,7 +268,7 @@ async function residual() {
   return null;
 }
 async function faintAnim(side) {
-  const st = side === 'me' ? bt.ps : bt.es; Aud.sfx('faint');
+  const st = side === 'me' ? bt.ps : bt.es; Aud.sfx('faint'); Aud.cry((side === 'me' ? bt.me : bt.foe).sp, true);
   await anim(0.7, (k) => { st.oy = 52 * ease(k); st.a = 1 - k; st.sy = 1 - 0.35 * k; });
   st.vis = false; st.oy = 0; st.a = 1; st.sy = 1;
 }
@@ -308,7 +318,7 @@ async function afterFaint(dead) {
     await giveExp(b.me, amt); addBond(b.me, b.trainer ? 3 : 2);
     if (b.fi + 1 < b.foes.length) {
       b.fi++; b.foe = b.foes[b.fi]; resetBT(b.foe); markSeen(b.foe.sp); b.hpE = b.foe.hp; b.es = ss(); b.es.vis = false;
-      await msg(`${b.trainer.name}は ${nameOf(b.foe)}を くりだした!`, 0.3); await slideIn(b.es); return 'next';
+      await msg(`${b.trainer.name}は ${nameOf(b.foe)}を くりだした!`, 0.3); if (b.trainer.boss && b.fi === b.foes.length - 1) await eyeCutin(b.foe, `${b.trainer.name}の きりふだ`); await slideIn(b.es); return 'next';
     }
     return 'win';
   }
@@ -336,7 +346,7 @@ async function throwBall() {
     if (S.party.length < 6) { S.party.push(f); await msg(`${nameOf(f)}は なかまに くわわった!`, 1.0); } else { S.box.push(f); await msg(`${nameOf(f)}は ボックスに おくられた!\n(メニューの「ボックス」で みられるよ)`, 1.4); }
     b.ball.vis = false;
     if (!S.dexShown) S.dexShown = {};
-    if (!S.dexShown[f.sp]) { S.dexShown[f.sp] = true; ui.dialog = null; await cutin(Art.sprites[f.sp], nameOf(f), sp.dex); }
+    if (!S.dexShown[f.sp]) { S.dexShown[f.sp] = true; ui.dialog = null; Aud.cry(f.sp); await cutin(Art.sprites[f.sp], nameOf(f), sp.dex); }
     return true;
   }
   Aud.sfx('escape'); b.ball.vis = false; await popIn(b.es);
@@ -386,6 +396,7 @@ async function runBattle({ trainer = null, foes }) {
   markSeen(b.foe.sp); b.hpE = b.foe.hp; b.hpM = b.me.hp; b.expF = b.expT = expFrac(b.me);
   b.es.vis = false; b.ps.vis = false; Aud.bgm(trainer && trainer.boss ? 'boss' : 'battle');
   await fade(0, 0.4);
+  if (trainer && trainer.boss) await eyeCutin(b.foe, `あかり番の ${trainer.name}`); else if (b.foe.shiny) await eyeCutin(b.foe, '★ ひかりの 個体', true);
   b.showInfo = true;
   await slideIn(b.es);
   await msg(trainer ? `${trainer.boss ? 'あかり番の ' : ''}${trainer.name}が しょうぶを しかけてきた!` : `あっ! やせいの ${nameOf(b.foe)}が とびだしてきた!`, 0.7);
@@ -424,7 +435,7 @@ async function runBattle({ trainer = null, foes }) {
     if (!result && b.me.hp > 0 && b.foe.hp > 0) { const r = await residual(); if (r === 'win' || r === 'lose') result = r; }
   }
   ui.dialog = null; ui.choice = null;
-  if (result === 'win' && trainer) { await msg(`${trainer.name}との しょうぶに かった!`, 0.9); }
+  if (result === 'win') { await victoryScene(trainer); if (trainer) await msg(`${trainer.name}との しょうぶに かった!`, 0.9); }
   for (const m of S.party) clearBT(m);
   await fade(1, 0.35, '#000'); Aud.sfx('select');
   mode = 'field'; bt = null;

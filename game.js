@@ -279,6 +279,7 @@ async function boxMenu() {
 }
 // 先頭のモンスターに話しかける: なかよし度で反応が変わる
 async function petFollower(m) {
+  Aud.cry(m.sp);
   world.emote = { t0: clock }; Aud.sfx('heal');
   const n = nameOf(m), lv = bondLv(m);
   const L = [
@@ -522,6 +523,7 @@ async function newGame() {
     await sayAll(['おお、きたな! まっておったぞ。', 'この 草原には、もふもふの モンスターたちが のんびり くらしておる。', 'ぼうけんには、いっしょに あるく なかまが ひつようじゃ。さあ、この子を つれていきなさい。']);
     Aud.sfx('get'); { const mk = mkMon('mikanya', 5); mk.bond = 20; S.party.push(mk); } markSeen('mikanya'); S.caught.mikanya = true;
     placeFollower('l'); // 主人公の 左どなりに 出す(重ならないように)
+    setTimeout(() => Aud.cry('mikanya'), 450);
     clearSpeaker(); Aud.sfx('caught'); await cutin(Art.sprites.mikanya, SPECIES.mikanya.n, SPECIES.mikanya.dex); // 大きく 紹介
     S.dexShown = { ...(S.dexShown || {}), mikanya: true };
     await say('ミカニャを なかまに した!');
@@ -561,6 +563,7 @@ function loop(t) {
   { const m = /[?&]oto=(now|[a-e])(?:&|$)/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen();
+  if (/[?&]battle=1(?:&|$)/.test(location.search)) { await battlePreview(); return; }
   const akari = /[?&]akari=(town[23]?)(?:&|$)/.exec(location.search);
   if (akari) { await lightPreview(akari[1]); return; }
   await openingScene(); await titleScreen();

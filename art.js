@@ -632,5 +632,6 @@ const Art = (() => {
     return bgMade[id];
   }
 
-  return { S, TS, sprites, bg, portrait, dot, shiny, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
+  const raw = (id) => imgs[id] || null; // 背景を ぬいた、元の 大きさの絵(大きく 寄るとき用)
+  return { raw, S, TS, sprites, bg, portrait, dot, shiny, grassBatch, init, person, tile, tallFront, treeSprite, houseSprite, signSprite, stoneSprite, ball, star, ell, blob, hash, shade, cv };
 })();
