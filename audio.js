@@ -154,10 +154,12 @@ const Aud = (() => {
       song: { bpm: 72, len: 32, play: (i, t, dt) => { const k = [69, 0, 70, 69, 65, 0, 64, 0, 0, 0, 62, 64, 65, 0, 0, 0, 69, 0, 74, 70, 69, 0, 65, 0, 64, 0, 62, 0, 57, 0, 0, 0][i]; if (k) koto(k, t, 0.085); if (i % 8 === 0) { koto([45, 45, 46, 45][i / 8], t, 0.07); } if (i === 8 || i === 24) voice(mtof(i === 8 ? 76 : 77), t, { type: 'sine', vol: 0.045, d: dt * 7, a: dt * 1.5, vib: true, echo: true }); if (i === 0 || i === 16) taiko(t, 0.13); if (i === 5 || i === 21) furin(t, 0.03); } },
     },
   };
-  let themeKey = 'now';
+  // オーナーが えらんだ組み合わせ: 最初の タップ音だけ オルゴール、コマ・題字・タイトル曲は 90年代アニメ
+  THEMES.pick = { start: THEMES.a.start, panel: THEMES.b.panel, title: THEMES.b.title, song: THEMES.b.song };
+  let themeKey = 'pick';
   const theme = () => THEMES[themeKey];
   function setTheme(k) { if (!THEMES[k]) return; themeKey = k; SONGS.title = THEMES[k].song; if (cur === 'title') { step = 0; if (ctx) nextT = ctx.currentTime + 0.05; } }
-  SONGS.title = THEMES.now.song;
+  SONGS.title = THEMES.pick.song;
   function sched() {
     if (!ctx || !cur || muted) return;
     const s = SONGS[cur], dt = 60 / s.bpm / 2;

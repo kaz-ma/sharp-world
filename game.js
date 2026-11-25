@@ -557,7 +557,7 @@ function loop(t) {
   try { await Promise.race([document.fonts.load('700 16px "Zen Kaku Gothic New"'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) {}
   try { const o = JSON.parse(localStorage.getItem('mofu.opts') || '{}'); if (o.gl != null) { gradeLevel = o.gl; manualGrade = true; } } catch (e) {}
   await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
-  { const m = /[?&]oto=([a-e])/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
+  { const m = /[?&]oto=(now|[a-e])(?:&|$)/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen(); await openingScene(); await titleScreen();
 })();
