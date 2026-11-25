@@ -133,7 +133,7 @@ async function doWarp(w) {
   const p = world.p;
   if (w.needs && !S.flags[w.needs]) { await say(w.needMsg || 'ゲートは まだ しまっている…。\nだれかに しょうぶを よばれるのを まっているようだ。'); await walkActor(p, OPP[p.dir], 1); return; }
   if (w.to === 'end') { await endingScene(); return; }
-  Aud.sfx('warp'); await fade(1, 0.25); enterMap(w.to, w.tx, w.ty, w.dir); save(); await fade(0, 0.25);
+  Aud.sfx('warp'); await fade(1, 0.25); enterMap(w.to, w.tx, w.ty, w.dir); await chapterOnArrive(w.to); save(); await fade(0, 0.25);
 }
 // ---------- お願いごと(サブクエスト) ----------
 const QUESTS = {
@@ -515,7 +515,7 @@ function drawEnding() {
   g.globalAlpha = 1;
 }
 async function newGame() {
-  S = newState(); await fade(1, 0.4); mode = 'field'; enterMap('village', 6, 8, 'd', true); await fade(0, 0.5);
+  S = newState(); await fade(1, 0.4); mode = 'field'; enterMap('village', 6, 8, 'd', true); await chapterOnArrive('village'); ui.banner = null; await fade(0, 0.5);
   await event(async () => {
     await sleep(0.4); await say('……ぴよぴよ。\nひなた村の、のんびりした あさ。');
     await cutin(Art.portrait('hero'), 'たびびと', 'ひなた村の あさ。\nひとりで、旅に でる。');
@@ -564,6 +564,8 @@ function loop(t) {
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen();
   if (/[?&]battle=1(?:&|$)/.test(location.search)) { await battlePreview(); return; }
+  const chap = /[?&]chapter=(all|[0-3])(?:&|$)/.exec(location.search);
+  if (chap) { await chapterPreview(chap[1]); return; }
   const akari = /[?&]akari=(town[23]?)(?:&|$)/.exec(location.search);
   if (akari) { await lightPreview(akari[1]); return; }
   await openingScene(); await titleScreen();
