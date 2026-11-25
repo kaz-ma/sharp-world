@@ -15,17 +15,17 @@
   "theme_color": "#18211c",
   "icons": [
     {
-      "src": "icons/icon-192.png?v=mwvgri5u",
+      "src": "icons/icon-192.png?v=mwvh53oc",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png?v=mwvgri5u",
+      "src": "icons/icon-512.png?v=mwvh53oc",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-maskable-512.png?v=mwvgri5u",
+      "src": "icons/icon-maskable-512.png?v=mwvh53oc",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

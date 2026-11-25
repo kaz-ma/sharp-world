@@ -1,12 +1,13 @@
-const CACHE = 'sharp-world-mwvgri5u';
-const FILES = ["./","index.html","manifest.webmanifest","style.css?v=mwvgri5u","data.js?v=mwvgri5u","art.js?v=mwvgri5u","audio.js?v=mwvgri5u","core.js?v=mwvgri5u","battle.js?v=mwvgri5u","game.js?v=mwvgri5u","assets/hinatagaeru.webp","assets/hotaruusagi.webp","assets/kinokokko.webp","assets/mikanya.webp","assets/op_1.webp","assets/op_2.webp","assets/op_3.webp","assets/op_4.webp","assets/op_5.webp","assets/op_logo.webp","assets/op_title.webp","assets/pukurisu.webp","assets/p_hero.webp","assets/p_hero_back.webp","assets/shizukufin.webp","icons/icon-192.png?v=mwvgri5u","icons/icon-512.png?v=mwvgri5u","icons/icon-maskable-512.png?v=mwvgri5u","icons/apple-touch-icon.png?v=mwvgri5u"];
+const CACHE = 'sharp-world-mwvh53oc';
+const FILES = ["./","index.html","manifest.webmanifest","style.css?v=mwvh53oc","data.js?v=mwvh53oc","art.js?v=mwvh53oc","audio.js?v=mwvh53oc","core.js?v=mwvh53oc","battle.js?v=mwvh53oc","game.js?v=mwvh53oc","assets/hinatagaeru.webp","assets/hotaruusagi.webp","assets/kinokokko.webp","assets/mikanya.webp","assets/op_1.webp","assets/op_2.webp","assets/op_3.webp","assets/op_4.webp","assets/op_5.webp","assets/op_logo.webp","assets/op_title.webp","assets/pukurisu.webp","assets/p_hero.webp","assets/p_hero_back.webp","assets/shizukufin.webp","icons/icon-192.png?v=mwvh53oc","icons/icon-512.png?v=mwvh53oc","icons/icon-maskable-512.png?v=mwvh53oc","icons/apple-touch-icon.png?v=mwvh53oc"];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (e.request.mode === 'navigate') { // ページ本体は まず ネットから(新しい版が すぐ届く)。つながらないときは とっておいたものを
-    e.respondWith(fetch(e.request.url, { cache: 'no-cache' }).then((r) => { const c = r.clone(); caches.open(CACHE).then((x) => x.put('index.html', c)); return r; }).catch(() => caches.match('index.html')));
+    const page = u.pathname.endsWith('oto.html') ? 'oto.html' : 'index.html';
+    e.respondWith(fetch(e.request.url, { cache: 'no-cache' }).then((r) => { if (r.ok) { const c = r.clone(); caches.open(CACHE).then((x) => x.put(page, c)); } return r; }).catch(() => caches.match(page).then((m) => m || caches.match('index.html'))));
     return;
   }
   if (u.origin === location.origin) { e.respondWith(caches.match(e.request, { ignoreSearch: false }).then((r) => r || fetch(e.request))); return; }

@@ -167,18 +167,18 @@ async function cutin(img, title, sub) {
   ui.dialog = null; flushBtn(); const t0 = clock;
   ui.overlay = () => {
     const k = ease(clamp((clock - t0) / 0.35, 0, 1));
-    g.fillStyle = `rgba(20,16,30,${0.6 * k})`; g.fillRect(0, 0, W, H);
-    g.save(); g.translate((1 - k) * -W, 0);
+    g.fillStyle = `rgba(20,16,30,${0.6 * k})`; g.fillRect(-OX, 0, VW, H); // 横長の画面でも はしまで
+    g.save(); g.translate((1 - k) * -VW, 0);
     const bg = g.createLinearGradient(0, 0, W, 0); bg.addColorStop(0, 'rgba(247,245,241,.96)'); bg.addColorStop(1, 'rgba(214,206,222,.96)'); g.fillStyle = bg;
-    g.beginPath(); g.moveTo(0, 96); g.lineTo(W, 66); g.lineTo(W, 266); g.lineTo(0, 296); g.closePath(); g.fill();
-    g.strokeStyle = '#37323f'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 96); g.lineTo(W, 66); g.moveTo(0, 296); g.lineTo(W, 266); g.stroke();
+    const sl = 30 / W * OX; g.beginPath(); g.moveTo(-OX, 96 + sl); g.lineTo(W + OX, 66 - sl); g.lineTo(W + OX, 266 - sl); g.lineTo(-OX, 296 + sl); g.closePath(); g.fill();
+    g.strokeStyle = '#37323f'; g.lineWidth = 3; g.beginPath(); g.moveTo(-OX, 96 + sl); g.lineTo(W + OX, 66 - sl); g.moveTo(-OX, 296 + sl); g.lineTo(W + OX, 266 - sl); g.stroke();
     g.restore();
     const hh = 300, ww = img.width * hh / img.height, sway = Math.sin(clock * 1.6) * 3;
     g.save(); g.globalAlpha = k; g.drawImage(img, W - ww - 28 + (1 - k) * 80, 330 - hh - sway, ww, hh); g.restore();
     g.globalAlpha = k; const lines = wrap(sub, Math.max(190, W - ww - 120), 15), top = 190 - Math.min(lines.length, 4) * 9;
     txt(title, 44, top - 30, { size: 32, w: 900 }); lines.slice(0, 4).forEach((l, i) => txt(l, 46, top + 6 + i * 22, { size: 15, color: MUTED }));
     txt('Aで つぎへ', 46, 266, { size: 12, color: MUTED }); g.globalAlpha = 1;
-    ui.hits.push({ x: 0, y: 0, w: W, h: H, act: () => pushBtn('a') });
+    ui.hits.push({ x: -OX, y: 0, w: VW, h: H, act: () => pushBtn('a') });
   };
   await sleep(0.35);
   for (;;) { const b = await nextBtn(); if (b === 'a' || b === 'b') break; }
@@ -271,8 +271,8 @@ function enterMap(id, x, y, dir, quiet) {
   const m = MAPS[id]; world.map = m;
   for (const k in MAPS) if (MAPS[k] !== m) delete MAPS[k]._cache; // いまの地図だけ、地面の絵を持つ
   const p = world.p; p.x = x; p.y = y; p.dir = dir; p.ox = p.oy = 0; p.pending = false; p.turnT = 0;
-  world.fol = { x, y, ox: 0, oy: 0, alt: false };
   world.npcs = m.npcs.map((n) => ({ ...n, ox: 0, oy: 0, step: 0, tt: rnd(2, 5), idle: n.idle ?? ['child', 'granny', 'traveler'].includes(n.id) }));
+  placeFollower();
   Aud.bgm(m.bgm);
   for (const [flag] of m.grassLit || []) { const key = 'spawn_' + m.id + '_' + flag; if (S.flags[flag] && !S.flags[key]) { S.flags[key] = true; bondEvents.push('あかりに ひかれて、あたらしい 子が あつまってきた!'); break; } }
   if (!quiet) ui.banner = { text: m.name, t0: clock };
@@ -280,6 +280,12 @@ function enterMap(id, x, y, dir, quiet) {
 const npcAt = (x, y) => world.npcs.find((n) => n.x === x && n.y === y);
 function solidAt(x, y) { const m = world.map; return y < 0 || x < 0 || y >= m.h || x >= m.w || m.blocked[y][x] || !!npcAt(x, y); }
 async function event(fn) { busy = true; try { await fn(); } catch (e) { console.error(e); } finally { busy = false; clearSpeaker(); flushBtn(); } }
+// ついて歩く子を、主人公と 重ならない場所に 置く(うしろ → 横。どこも空いていなければ 同じマス)
+function placeFollower(first) {
+  const p = world.p, back = OPP[p.dir] || 'l', sides = p.dir === 'l' || p.dir === 'r' ? ['u', 'd'] : ['l', 'r'];
+  const d = [...(first ? [first] : []), back, ...sides].find((k) => !solidAt(p.x + DV[k][0], p.y + DV[k][1]));
+  const v = d ? DV[d] : [0, 0]; world.fol = { x: p.x + v[0], y: p.y + v[1], ox: 0, oy: 0, alt: false };
+}
 // 先頭のモンスターは、主人公がいた場所へ ついてくる
 function followStep(px0, py0) { const f = world.fol; f.ox = f.x + f.ox - px0; f.oy = f.y + f.oy - py0; f.x = px0; f.y = py0; f.alt = !f.alt; if (Math.abs(f.ox) > 1.5 || Math.abs(f.oy) > 1.5) f.ox = f.oy = 0; }
 function tryMove(d) {

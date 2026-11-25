@@ -521,6 +521,9 @@ async function newGame() {
     const e = world.npcs.find((n) => n.id === 'elder'); e.dir = 'l'; world.p.dir = 'r';
     await sayAll(['おお、きたな! まっておったぞ。', 'この 草原には、もふもふの モンスターたちが のんびり くらしておる。', 'ぼうけんには、いっしょに あるく なかまが ひつようじゃ。さあ、この子を つれていきなさい。']);
     Aud.sfx('get'); { const mk = mkMon('mikanya', 5); mk.bond = 20; S.party.push(mk); } markSeen('mikanya'); S.caught.mikanya = true;
+    placeFollower('l'); // 主人公の 左どなりに 出す(重ならないように)
+    clearSpeaker(); Aud.sfx('caught'); await cutin(Art.sprites.mikanya, SPECIES.mikanya.n, SPECIES.mikanya.dex); // 大きく 紹介
+    S.dexShown = { ...(S.dexShown || {}), mikanya: true };
     await say('ミカニャを なかまに した!');
     await sayAll(['しっぽの はっぱが じまんの、ひなたぼっこ だいすきな 子じゃ。なかよく してやっておくれ。', 'まずは 東の ひなた草原へ いってみなさい。\n草むらでは、とつぜん モンスターが とびだすぞ!', 'Aで はなす・けってい、Bで もどる・ダッシュ。\nメニューで ずかんや バッグを ひらけるぞ。']);
     ui.banner = { text: world.map.name, t0: clock }; bondEvents.push('めやす: 東の「ひなた草原」へ(メニューの めやす でも みられるよ)');
@@ -554,6 +557,7 @@ function loop(t) {
   try { await Promise.race([document.fonts.load('700 16px "Zen Kaku Gothic New"'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) {}
   try { const o = JSON.parse(localStorage.getItem('mofu.opts') || '{}'); if (o.gl != null) { gradeLevel = o.gl; manualGrade = true; } } catch (e) {}
   await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
+  { const m = /[?&]oto=([a-e])/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen(); await openingScene(); await titleScreen();
 })();
