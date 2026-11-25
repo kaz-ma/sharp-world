@@ -282,7 +282,7 @@ function buildTown3() {
   const NEED3 = 'この 港の あかりを ともさずに、さきへ すすむのは はやい きがする。\n灯台守の ゴロウと しょうぶを しよう。';
   return {
     id: 'town3', name: 'ナギサ港', w, h, t, bg: 'town3', bgm: 'town', btheme: 'harbor', grass: null, fog: 0.45,
-    lamps: [{ x: 122, y: 298 }, { x: 402, y: 298 }, { x: 700, y: 298 }, { x: 962, y: 298 }, { x: 1136, y: 118 }],
+    lamps: [{ x: 122, y: 298 }, { x: 402, y: 298 }, { x: 700, y: 298 }, { x: 962, y: 298 }, { x: 1104, y: 54 }], // 最後は 灯台の てっぺん
     objects: [
       { type: 'door', x: 6, y: 10, door: 'market' }, { type: 'door', x: 14, y: 10, door: 'warehouse' },
       { type: 'door', x: 25, y: 10, door: 'clinic3' }, { type: 'door', x: 34, y: 10, door: 'lighthouse' },

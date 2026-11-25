@@ -78,18 +78,7 @@ async function trainerSpot(n) {
   setSpeaker(n.id); await sayAll(T.intro);
   await trainerBattle(n);
 }
-// ひだまり町のあかりをともす(あかり番のレンに勝ったあと)
-async function lightTown() {
-  const m = world.map; clearSpeaker();
-  await say('そのとき、町の どこかで カチリと おとが した。');
-  await fade(0.55, 0.7, '#0e1424'); m.litN = 0; await sleep(0.4);
-  for (let i = 0; i < m.lamps.length; i++) { m.litN++; Aud.sfx('heal'); await sleep(0.5); }
-  S.flags['lit_' + m.id] = true; await sleep(0.8); await fade(0, 1.2);
-  Aud.sfx('levelup');
-  for (const l of m.lightText) await say(l);
-  save();
-  ui.banner = { text: '町が すこし あたたかくなった', t0: clock };
-}
+// 町の あかりを ともす場面(lightTown)は light.js
 async function trainerBattle(n) {
   const T = TRAINERS[n.id]; Aud.sfx('encounter'); Aud.bgm(null); await flashFx(2); await wipe(0.55);
   const r = await runBattle({ trainer: T, foes: T.team.map(([s, l]) => mkMon(s, l)) });
@@ -559,7 +548,10 @@ function loop(t) {
   await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
   { const m = /[?&]oto=(now|[a-e])(?:&|$)/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
-  await startScreen(); await openingScene(); await titleScreen();
+  await startScreen();
+  const akari = /[?&]akari=(town[23]?)(?:&|$)/.exec(location.search);
+  if (akari) { await lightPreview(akari[1]); return; }
+  await openingScene(); await titleScreen();
 })();
 
 if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(location.hostname)) { // 開発用(自分のパソコンでだけ)

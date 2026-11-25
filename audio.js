@@ -54,6 +54,9 @@ const Aud = (() => {
     get: () => arp([72, 79, 84], 0.09, 'triangle', 0.2, 0.3),
     run: () => { const t = ctx.currentTime; noise(t, 0.3, 0.12, 2800); tone(500, t, 0.3, 'sine', 0.07, 200); },
     win: () => arp([72, 72, 72, 76, 74, 79, 84], 0.13, 'triangle', 0.2, 0.3),
+    // あかりの場面: 街灯が ともる(i番目ほど 高い音) / ぜんぶ ともった しゅんかん
+    lampOn: (i = 0) => { const t = ctx.currentTime, n = [64, 67, 69, 71, 76, 79][i % 6]; wash(t, 0.05, 0.12, 2500, 9000, 0.002); musicbox(n + 12, t + 0.14, 0.1); synth(n - 12, t + 0.14, 0.04, 0.7, 2200); voice(90, t + 0.14, { f2: 55, d: 0.3, vol: 0.2 }); },
+    lightBurst: () => { const t = ctx.currentTime; kick(t, 0.4); wash(t, 2.2, 0.14, 3500, 12000, 0.01); [41, 53, 57, 60, 64, 67].forEach((n) => synth(n, t, 0.045, 2.6, 3200)); [72, 76, 79, 84, 88, 91].forEach((n, k) => musicbox(n, t + 0.1 + k * 0.1, 0.08)); },
     // オープニング: はじめの タップ / コマが 出る / 題字(中身は えらんだ 音の組 THEMES)
     opStart: () => theme().start(ctx.currentTime), opPanel: (i = 0) => theme().panel(ctx.currentTime, i % 5), opTitle: () => theme().title(ctx.currentTime),
   };
@@ -160,6 +163,13 @@ const Aud = (() => {
   const theme = () => THEMES[themeKey];
   function setTheme(k) { if (!THEMES[k]) return; themeKey = k; SONGS.title = THEMES[k].song; if (cur === 'title') { step = 0; if (ctx) nextT = ctx.currentTime + 0.05; } }
   SONGS.title = THEMES.pick.song;
+  SONGS.light = { bpm: 92, len: 32, play: (i, t, dt) => { // あかりの一枚絵の 曲(90年代アニメふうの あたたかい版)
+    const bar = Math.floor(i / 8), s = i % 8, ch = [[53, 57, 60, 64], [55, 59, 62, 67], [52, 55, 59, 64], [57, 60, 64, 69]][bar];
+    if (s === 0) { ch.forEach((n) => voice(mtof(n), t, { type: 'sawtooth', vol: 0.02, d: dt * 8.2, a: dt * 1.5, lp: 1500 })); voice(mtof(ch[0] - 12), t, { type: 'triangle', vol: 0.14, d: dt * 6 }); kick(t, 0.2); }
+    if (s === 4) { voice(mtof(ch[0] - 5), t, { type: 'triangle', vol: 0.11, d: dt * 3 }); wash(t, 0.16, 0.06, 1500, 6500, 0.003); }
+    musicbox(ch[[0, 1, 2, 3, 2, 3, 1, 2][s]] + 12, t, 0.035);
+    const m = [72, 0, 76, 0, 81, 0, 79, 0, 79, 0, 74, 0, 71, 0, 74, 0, 76, 0, 79, 0, 83, 0, 79, 0, 81, 0, 0, 0, 76, 0, 0, 0][i]; if (m) synth(m, t, 0.035, dt * 2.4, 2600);
+  } };
   function sched() {
     if (!ctx || !cur || muted) return;
     const s = SONGS[cur], dt = 60 / s.bpm / 2;

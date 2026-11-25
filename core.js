@@ -29,7 +29,8 @@ function newState() { return { party: [], box: [], money: 300, bag: { ball: 8, p
 let S = newState();
 const SAVE_KEY = 'mofu.save.v1';
 function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
-function save() { try { S.map = world.map.id; S.x = world.p.x; S.y = world.p.y; S.dir = world.p.dir; localStorage.setItem(SAVE_KEY, JSON.stringify(S)); return true; } catch (e) { return false; } }
+let preview = false; // おためし中は セーブを 書きかえない
+function save() { if (preview) return false; try { S.map = world.map.id; S.x = world.p.x; S.y = world.p.y; S.dir = world.p.dir; localStorage.setItem(SAVE_KEY, JSON.stringify(S)); return true; } catch (e) { return false; } }
 function loadSave() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); if (d && d.party) { S = Object.assign(newState(), d); return true; } } catch (e) {} return false; }
 
 // ---------- 入力 ----------
@@ -272,7 +273,7 @@ function enterMap(id, x, y, dir, quiet) {
   for (const k in MAPS) if (MAPS[k] !== m) delete MAPS[k]._cache; // いまの地図だけ、地面の絵を持つ
   const p = world.p; p.x = x; p.y = y; p.dir = dir; p.ox = p.oy = 0; p.pending = false; p.turnT = 0;
   world.npcs = m.npcs.map((n) => ({ ...n, ox: 0, oy: 0, step: 0, tt: rnd(2, 5), idle: n.idle ?? ['child', 'granny', 'traveler'].includes(n.id) }));
-  placeFollower();
+  placeFollower(); world.cam = world.lampK = null; world.night = 0;
   Aud.bgm(m.bgm);
   for (const [flag] of m.grassLit || []) { const key = 'spawn_' + m.id + '_' + flag; if (S.flags[flag] && !S.flags[key]) { S.flags[key] = true; bondEvents.push('あかりに ひかれて、あたらしい 子が あつまってきた!'); break; } }
   if (!quiet) ui.banner = { text: m.name, t0: clock };
@@ -370,7 +371,7 @@ function drawGrid(m, cx, cy, x0, x1, y0, y1) { // ?debug 用: 歩けない所(�
 }
 function drawField() {
   const m = world.map, p = world.p, T = clock;
-  const pxw = (p.x + p.ox) * TS + 16, pyw = (p.y + p.oy) * TS + 16;
+  const pxw = world.cam ? world.cam.x : (p.x + p.ox) * TS + 16, pyw = world.cam ? world.cam.y : (p.y + p.oy) * TS + 16; // world.cam: 場面で カメラを 動かす
   const camx = clamp(pxw - VW / 2, 0, Math.max(0, m.w * TS - VW)), camy = clamp(pyw - H / 2, 0, Math.max(0, m.h * TS - H));
   const cx = Math.round(camx), cy = Math.round(camy);
   const x0 = Math.max(0, Math.floor(cx / TS) - 1), x1 = Math.min(m.w - 1, Math.floor((cx + VW) / TS) + 1);
@@ -420,9 +421,15 @@ function drawField() {
     }
   }
   if (bg && m.lamps) { // 街灯のあかり
-    const n = S.flags['lit_' + m.id] ? m.lamps.length : (m.litN || 0);
+    if (world.night > 0) drawNight(m, cx, cy, (p.x + p.ox) * TS + 16 - cx, (p.y + p.oy) * TS + TS - cy);
+    const lit = S.flags['lit_' + m.id];
     g.save(); g.globalCompositeOperation = 'screen';
-    for (let i = 0; i < n; i++) { const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy, fl = 1 + Math.sin(clock * 3 + i * 2) * 0.04; const rg = g.createRadialGradient(lx, ly, 2, lx, ly, 120 * fl); rg.addColorStop(0, 'rgba(255,240,190,1)'); rg.addColorStop(0.2, 'rgba(255,214,140,.7)'); rg.addColorStop(0.55, 'rgba(255,184,110,.28)'); rg.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = rg; g.fillRect(lx - 124, ly - 124, 248, 248); }
+    for (let i = 0; i < m.lamps.length; i++) { const k = world.lampK ? world.lampK[i] : lit ? 1 : 0; if (k <= 0) continue; const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy, r = 120 * (0.55 + 0.45 * k) * (1 + Math.sin(clock * 3 + i * 2) * 0.04); g.globalAlpha = Math.min(1, k); const rg = g.createRadialGradient(lx, ly, 2, lx, ly, r); rg.addColorStop(0, 'rgba(255,240,190,1)'); rg.addColorStop(0.2, 'rgba(255,214,140,.7)'); rg.addColorStop(0.55, 'rgba(255,184,110,.28)'); rg.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = rg; g.fillRect(lx - r, ly - r, r * 2, r * 2); }
+    if (world.night > 0) { g.globalCompositeOperation = 'lighter'; for (let i = 0; i < m.lamps.length; i++) { const k = world.lampK ? Math.min(1, world.lampK[i]) : 0; if (k <= 0) continue; const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy + 30, og = g.createRadialGradient(lx, ly, 2, lx, ly, 105); og.addColorStop(0, `rgba(255,150,50,${0.3 * k})`); og.addColorStop(1, 'rgba(255,130,40,0)'); g.globalAlpha = 1; g.fillStyle = og; g.fillRect(lx - 105, ly - 105, 210, 210); } } // 夜は 暖かい色を たす
+    if (m.id === 'town3') { // 灯台の ひかりが ゆっくり まわる
+      const k = Math.min(1, world.lampK ? world.lampK[m.lamps.length - 1] : lit ? 1 : 0);
+      if (k > 0) { const L = m.lamps[m.lamps.length - 1], lx = L.x - cx, ly = L.y - cy, a = clock * 0.9; for (const side of [0, Math.PI]) { const d = Math.cos(a + side), len = (d >= 0 ? 1 : -1) * (60 + 520 * Math.abs(d)), tilt = Math.sin(a + side) * 26, bg2 = g.createLinearGradient(lx, ly, lx + len, ly); bg2.addColorStop(0, `rgba(255,230,165,${0.6 * k})`); bg2.addColorStop(1, 'rgba(255,220,150,0)'); g.fillStyle = bg2; g.beginPath(); g.moveTo(lx, ly - 4); g.lineTo(lx + len, ly - 36 + tilt); g.lineTo(lx + len, ly + 40 + tilt); g.lineTo(lx, ly + 6); g.fill(); } }
+    }
     g.restore();
   }
   if (m.spots) for (const s of m.spots) { // 光る場所
@@ -431,7 +438,7 @@ function drawField() {
     g.save(); g.globalAlpha = 0.55 + tw * 0.45; Art.star(g, sx, sy - tw * 2, r, '#fff6c0'); g.strokeStyle = 'rgba(255,246,190,.9)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - r * 1.6, sy - tw * 2); g.lineTo(sx + r * 1.6, sy - tw * 2); g.moveTo(sx, sy - tw * 2 - r * 1.6); g.lineTo(sx, sy - tw * 2 + r * 1.6); g.stroke(); g.restore();
   }
   if (m.fog && gradeLevel >= 1) { // 霧: 灯がともるとうすくなる
-    const fa = m.fog * (S.flags['lit_' + m.id] ? 0.3 : 1);
+    const fa = m.fog * (S.flags['lit_' + m.id] ? 0.3 : 1) * (1 - (world.night || 0) * 0.85); // 夜の場面では うすく
     g.save(); for (let i = 0; i < (gradeLevel >= 2 ? 6 : 2); i++) { const fx = ((i * 330 + clock * (9 + i * 3)) % (VW + 500)) - 250, fy = 60 + (i * 61) % 300, rr2 = 190 + (i % 3) * 40; const fg = g.createRadialGradient(fx, fy, 10, fx, fy, rr2); fg.addColorStop(0, `rgba(232,238,242,${fa * 0.55})`); fg.addColorStop(1, 'rgba(232,238,242,0)'); g.fillStyle = fg; g.fillRect(fx - rr2, fy - rr2, rr2 * 2, rr2 * 2); }
     g.fillStyle = `rgba(226,233,238,${fa * 0.18})`; g.fillRect(0, 0, VW, H); g.restore();
   }
