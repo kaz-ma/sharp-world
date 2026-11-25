@@ -217,7 +217,7 @@ const Art = (() => {
       drawFit(g, im, (S - w) / 2 * R, (184 - h) * R, w * R, h * R);
     } else if (DRAW[id]) { g.scale(R, R); DRAW[id](g); }
     else if (SPECIES[id] && SPECIES[id].from && sprites[SPECIES[id].from]) { // 進化後の仮絵: 元の絵を大きく、金色の光をまとわせる
-      const p = sprites[SPECIES[id].from], k = 1.12, sz = S * R * k; g.shadowColor = 'rgba(255,214,90,.95)'; g.shadowBlur = 20 * R; g.drawImage(p, (S * R - sz) / 2, S * R - sz + 6 * R, sz, sz);
+      const p = sprites[SPECIES[id].from], k = 0.96, sz = S * R * k; g.shadowColor = 'rgba(255,214,90,.95)'; g.shadowBlur = 8 * R; g.drawImage(p, (S * R - sz) / 2, S * R - sz - 1 * R, sz, sz); // はみ出すと 光が 四角く 切れるので 内がわに
     }
     else if (id === 'mikanya') { // 絵が読めなかったときの代わり
       g.scale(R, R); blob(g, 96, 120, 52, 46, '#ffb066', '#e0762a'); blob(g, 96, 88, 46, 40, '#ffc27d', '#e8873a');
@@ -253,10 +253,12 @@ const Art = (() => {
   }
 
   // ---------- 人物(ちびキャラ) ----------
-  function person(g, pal, kind, dir, step, cx, by, sc = 1) {
+  function person(g, pal, kind, dir, step, cx, by, sc = 1, o = {}) {
     const P = PALETTES[pal] || PALETTES.hero;
     g.save(); g.translate(cx, by); g.scale(sc, sc);
     ell(g, 0, 0, 11, 4, 'rgba(40,60,30,.22)');
+    g.translate(o.dx || 0, o.dy || 0); if (o.sy) g.scale(1, o.sy);
+    const eyeAt = (x, y) => { if (o.face && o.face !== 'calm') { faceEye(g, o.face, x, y); return; } if (o.blink) { g.strokeStyle = '#3a2a2a'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x - 1.8, y); g.lineTo(x + 1.8, y); g.stroke(); } else ell(g, x, y, 1.5, 2, '#3a2a2a'); };
     const walk = step ? (step === 1 ? 1 : -1) : 0, bob = step ? -1 : 0;
     const legC = '#5b4a60';
     for (const sx of [-1, 1]) {
@@ -278,12 +280,12 @@ const Art = (() => {
       ell(g, 0, hy, 10.4, 10, P.skin);
       if (dir === 'd') {
         g.fillStyle = P.hair; g.beginPath(); g.ellipse(0, hy - 3.5, 11.2, 8, 0, Math.PI, 0); g.lineTo(9, hy - 3); g.quadraticCurveTo(0, hy + 1, -9, hy - 3); g.closePath(); g.fill();
-        ell(g, -4, hy + 1.5, 1.5, 2, '#3a2a2a'); ell(g, 4, hy + 1.5, 1.5, 2, '#3a2a2a');
+        eyeAt(-4, hy + 1.5); eyeAt(4, hy + 1.5);
         g.save(); g.globalAlpha = 0.55; ell(g, -7, hy + 4.5, 2.4, 1.6, '#ff9aa8'); ell(g, 7, hy + 4.5, 2.4, 1.6, '#ff9aa8'); g.restore();
       } else {
         const s = dir === 'l' ? -1 : 1;
         g.fillStyle = P.hair; g.beginPath(); g.ellipse(-s * 1.5, hy - 2, 10.6, 9, 0, Math.PI * 0.95, Math.PI * 2.05); g.lineTo(-s * 10, hy + 2); g.closePath(); g.fill();
-        ell(g, s * 4.6, hy + 1.5, 1.5, 2, '#3a2a2a');
+        eyeAt(s * 4.6, hy + 1.5);
         g.save(); g.globalAlpha = 0.55; ell(g, s * 7, hy + 4.5, 2.4, 1.6, '#ff9aa8'); g.restore();
       }
     }
@@ -308,7 +310,29 @@ const Art = (() => {
     } else if (kind === 'child') {
       g.fillStyle = P.hat; g.beginPath(); g.arc(0, hy - 10, 3.6, 0, 7); g.fill();
     }
+    if (o.face && dir === 'd') faceMouth(g, o.face, hy);
     g.restore();
+  }
+  function faceEye(g, f, x, y) {
+    const s = x < 0 ? -1 : 1, line = (a) => { g.strokeStyle = '#3a2a2a'; g.lineWidth = 0.9; g.lineCap = 'round'; g.beginPath(); a(); g.stroke(); };
+    if (f === 'joy') line(() => { g.moveTo(x - 2, y + 0.8); g.quadraticCurveTo(x, y - 2.4, x + 2, y + 0.8); });
+    else if (f === 'shy') line(() => { g.moveTo(x - 1.8, y - 0.2); g.quadraticCurveTo(x, y + 1.6, x + 1.8, y - 0.2); });
+    else if (f === 'surprise') { ell(g, x, y, 2, 2.5, '#3a2a2a'); ell(g, x - 0.6, y - 0.8, 0.8, 0.8, '#fff'); line(() => { g.moveTo(x - 2, y - 4.4); g.quadraticCurveTo(x, y - 5.4, x + 2, y - 4.4); }); }
+    else if (f === 'sad') { ell(g, x, y + 0.4, 1.3, 1.6, '#3a2a2a'); line(() => { g.moveTo(x - 2 * s, y - 3.8); g.lineTo(x + 2 * s, y - 2.4); }); }
+    else if (f === 'angry' || f === 'fight') { ell(g, x, y + 0.2, 1.5, 1.7, '#3a2a2a'); line(() => { g.moveTo(x - 2.2 * s, y - 2.2); g.lineTo(x + 2.2 * s, y - (f === 'angry' ? 4.4 : 3.8)); }); }
+    else if (f === 'think') ell(g, x + 0.9, y - 0.4, 1.4, 1.8, '#3a2a2a');
+    else ell(g, x, y, 1.5, 2, '#3a2a2a');
+  }
+  function faceMouth(g, f, hy) {
+    const y = hy + 5.6; g.strokeStyle = '#7a3f3a'; g.fillStyle = '#9a4a48'; g.lineWidth = 0.8; g.lineCap = 'round'; g.beginPath();
+    if (f === 'joy') { g.moveTo(-2.6, y - 0.4); g.quadraticCurveTo(0, y + 3.6, 2.6, y - 0.4); g.closePath(); g.fill(); }
+    else if (f === 'surprise') { g.ellipse(0, y + 0.8, 1.3, 1.7, 0, 0, 7); g.fill(); }
+    else if (f === 'sad') { g.moveTo(-1.8, y + 1.4); g.quadraticCurveTo(0, y - 0.4, 1.8, y + 1.4); g.stroke(); }
+    else if (f === 'angry') { g.moveTo(-2, y + 1.2); g.lineTo(-0.6, y + 0.2); g.lineTo(0.6, y + 1.2); g.lineTo(2, y + 0.2); g.stroke(); }
+    else if (f === 'fight') { g.moveTo(-2, y + 0.6); g.quadraticCurveTo(0.4, y + 1.6, 2.4, y - 0.4); g.stroke(); }
+    else if (f === 'think') { g.moveTo(0.2, y + 0.8); g.lineTo(2.2, y + 0.6); g.stroke(); }
+    else { g.moveTo(-1.4, y + 0.4); g.quadraticCurveTo(0, y + 1.5, 1.4, y + 0.4); g.stroke(); }
+    if (f === 'shy') for (const sx of [-1, 1]) { g.save(); g.globalAlpha = 0.5; ell(g, sx * 7, hy + 4.5, 3, 2, '#ff6f8f'); g.restore(); }
   }
 
   // ---------- 地面・ものの絵 ----------
@@ -594,17 +618,19 @@ const Art = (() => {
   // ---------- 立ち絵(会話で大きく出る絵)。assets/p_<id>.webp があればそれを、なければ仮の絵(ちびキャラの拡大) ----------
   const PW = 240, PH = 270, portraits = {};
   const PAL_OF = { minato2: 'rival', minato3: 'rival', ygranny: 'granny', yboy: 'child', yshop: 'nurse', hiker: 'camper', oldman: 'elder', girl: 'child', clerk: 'nurse', farmer: 'granny', nboy: 'child', dockgirl: 'child' };
-  function portrait(id) {
-    if (portraits[id]) return portraits[id];
+  function portrait(key) {
+    const [id, emo] = String(key).split('@');
+    if (emo && imgs['p_' + id]) return portrait(id); // 取りこみ絵は 1枚。しるしと 動きで 表情を つける
+    if (portraits[key]) return portraits[key];
     const c = cv(PW * R, PH * R), g = c.getContext('2d'), im = imgs['p_' + id];
     if (im) {
       const k = Math.min(PW / im.width, PH / im.height), w = im.width * k, h = im.height * k;
       drawFit(g, im, (PW - w) / 2 * R, (PH - h) * R, w * R, h * R);
     } else {
       const pal = PAL_OF[id] || id;
-      g.save(); g.scale(R, R); person(g, PALETTES[pal] ? pal : 'hero', PALETTES[pal] ? pal : 'hero', 'd', 0, PW / 2, PH + 78, 6); g.restore();
+      g.save(); g.scale(R, R); person(g, PALETTES[pal] ? pal : 'hero', PALETTES[pal] ? pal : 'hero', 'd', 0, PW / 2, PH + 78, 6, { face: emo || 'calm' }); g.restore();
     }
-    return (portraits[id] = c);
+    return (portraits[key] = c);
   }
   // ミドリ団地(仮): 近未来に改変された田舎。夕暮れの紫、ガラスのビニールハウス、光ファイバー、ドローン
   function town2Bg() {

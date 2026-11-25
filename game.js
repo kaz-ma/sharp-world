@@ -404,14 +404,13 @@ async function openMenu() { ui.skyChip = true; try { await menuLoop(); } finally
 async function menuLoop() {
   Aud.sfx('ok');
   for (;;) {
-    const items = ['めやす', 'ずかん', 'なかま', { label: 'ボックス', sub: S.box.length ? `${S.box.length}ひき` : '' }, 'バッグ', 'セーブ', 'せってい', 'とじる'];
-    if (TOWNS.some((t) => S.flags['mem_' + t])) items.splice(2, 0, 'きおく');
+    const items = ['めやす', 'ずかん', 'なかま', { label: 'ボックス', sub: S.box.length ? `${S.box.length}ひき` : '' }, 'バッグ', 'にっき', 'セーブ', 'せってい', 'とじる'];
     const c = await choose(items, { x: W - 196, y: 34, w: 184, rowH: items.length > 8 ? 28 : 30, title: `ずかん ${dexCount()}/${SPECIES_ORDER.length}  ${S.money || 0}コイン`, cancel: -1 });
     if (c < 0) return;
     const lab = typeof items[c] === 'string' ? items[c] : items[c].label;
     if (lab === 'めやす') await goalScreen();
     else if (lab === 'ずかん') await dexScreen();
-    else if (lab === 'きおく') { const seen = TOWNS.filter((t) => S.flags['mem_' + t]); const k = await choose(seen.map((t) => MEMORIES[t].title).concat(['もどる']), { x: W - 336, y: 60, w: 324, title: 'あつめた きおく', cancel: -1 }); if (k >= 0 && k < seen.length) await memoryScene(seen[k]); }
+    else if (lab === 'にっき') await diaryScreen();
     else if (lab === 'なかま') await partyScreen();
     else if (lab === 'ボックス') await boxMenu();
     else if (lab === 'バッグ') {
@@ -582,7 +581,7 @@ async function continueGame() {
 async function titleScreen() {
   mode = 'title'; busy = false; Aud.bgm('title');
   for (;;) {
-    const c = await choose(['はじめから', { label: 'つづきから', off: !hasSave() }, 'セーブを よみこむ'], { x: 50, y: 293, w: 540, cols: 3, cancel: false }); // 下端は iPhoneの線の ぶん あける
+    const c = await choose(['はじめから', { label: 'つづきから', off: !hasSave() }, 'セーブを よみこむ'], { x: 50, y: 293, w: 540, cols: 3, cancel: false, dark: true }); // 下端は iPhoneの線の ぶん あける
     if (c === 0) { await newGame(); return; }
     if (c === 1 && loadSave()) { await continueGame(); return; }
     if (c === 2) await transferWindow('in', '');

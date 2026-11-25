@@ -103,10 +103,18 @@ for (const [id, fn] of [['btnA', () => pushBtn('a')], ['btnB', () => { pushBtn('
 
 // ---------- 画面の部品 ----------
 function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+const ACCENT = '#c25a62';
+function paper(x, y, h, fill) { if (fill && !['#faf8f5', CREAM].includes(fill)) return fill; const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, '#fdf9f1'); gr.addColorStop(1, '#eee6d9'); return gr; }
+function diamond(x, y, r, c) { g.fillStyle = c; g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); }
 function panel(x, y, w, h, o = {}) {
-  g.save(); g.shadowColor = 'rgba(40,30,60,.3)'; g.shadowBlur = 8; g.shadowOffsetY = 3; g.fillStyle = o.fill || CREAM; rr(x, y, w, h, o.r ?? 12); g.fill(); g.restore();
-  g.lineWidth = o.lw || 2.5; g.strokeStyle = o.stroke || EDGE; rr(x, y, w, h, o.r ?? 12); g.stroke();
+  const r = o.r ?? 9;
+  g.save(); g.shadowColor = 'rgba(30,20,48,.38)'; g.shadowBlur = 9; g.shadowOffsetY = 3; g.fillStyle = paper(x, y, h, o.fill); rr(x, y, w, h, r); g.fill(); g.restore();
+  g.lineWidth = o.lw || 2; g.strokeStyle = o.stroke || '#3d3550'; rr(x, y, w, h, r); g.stroke();
+  if (h >= 40 && w >= 60 && !o.plain) { g.lineWidth = 1; g.strokeStyle = o.inner || 'rgba(150,118,92,.5)'; rr(x + 3.5, y + 3.5, w - 7, h - 7, Math.max(2, r - 3)); g.stroke(); }
+  if (w >= 150 && h >= 60 && !o.plain) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) diamond(dx > 0 ? x + 7.5 : x + w - 7.5, dy > 0 ? y + 7.5 : y + h - 7.5, 3, ACCENT);
 }
+// ちいさな 灯り(えらんでいる しるし・つぎへの しるし)
+function lampMark(x, y, r = 4) { const k = 0.85 + Math.sin(clock * 5) * 0.15, gr = g.createRadialGradient(x, y, 0.5, x, y, r * 2.6); gr.addColorStop(0, `rgba(255,176,86,${0.85 * k})`); gr.addColorStop(1, 'rgba(255,160,80,0)'); g.fillStyle = gr; g.fillRect(x - r * 2.6, y - r * 2.6, r * 5.2, r * 5.2); diamond(x, y, r * k, '#d1603f'); diamond(x, y, r * 0.45, '#ffe3a8'); }
 function txt(s, x, y, o = {}) {
   g.font = `${o.w || 700} ${o.size || 15}px ${FONT}`; g.textAlign = o.align || 'left'; g.textBaseline = 'middle';
   if (o.stroke) { g.lineWidth = o.sw || 4; g.lineJoin = 'round'; g.strokeStyle = o.stroke; g.strokeText(s, x, y); }
@@ -123,13 +131,15 @@ function wrap(text, maxW, size = 17) {
   return out;
 }
 function bar(x, y, w, h, frac, c1, c2) {
-  g.fillStyle = 'rgba(60,50,80,.2)'; rr(x, y, w, h, h / 2); g.fill();
+  g.fillStyle = 'rgba(61,53,80,.22)'; rr(x - 1, y - 1, w + 2, h + 2, h / 2 + 1); g.fill();
   const f = clamp(frac, 0, 1); if (f > 0) { const gr = g.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, c1); gr.addColorStop(1, c2); g.fillStyle = gr; rr(x, y, Math.max(h, w * f), h, h / 2); g.fill(); }
 }
 const hpColor = (f) => (f > 0.5 ? ['#a3d4a4', '#5aa571'] : f > 0.2 ? ['#ead67e', '#c9a63a'] : ['#e8908a', '#c0504a']);
 
 // 会話(1ページ2行。Aで次へ)
 async function say(text, o = {}) {
+  let tag = null; text = String(text).replace(/\[(joy|surprise|fight|angry|sad|think|shy)\]/, (_, e) => { tag = e; return ''; });
+  if (ui.speaker) { const emo = tag || guessEmo(text); if (emo !== ui.speaker.emo || emo) ui.speaker.emoAt = clock; ui.speaker.emo = emo; }
   const w = o.w || 616, lines = wrap(text, w - 48);
   for (let i = 0; i < lines.length; i += 2) {
     const page = lines.slice(i, i + 2).join('\n'); flushBtn();
@@ -155,13 +165,13 @@ function setSpeaker(id) { if (ui.speaker && ui.speaker.id === id) return; if (ui
 function clearSpeaker() { if (ui.speaker) { ui.spkOut = { ...ui.speaker, t1: clock }; ui.speaker = null; } }
 function drawSpeaker() {
   if (mode === 'battle') return;
-  const one = (sp, k) => { if (k <= 0) return; const img = Art.portrait(sp.id), h = 232, w = img.width * h / img.height, x = 14 + (1 - ease(k)) * -34; g.save(); g.globalAlpha = clamp(k, 0, 1); g.drawImage(img, x, 296 - h, w, h); g.restore(); return x + w; };
-  if (ui.spkOut) { const k = 1 - (clock - ui.spkOut.t1) / 0.2; if (k > 0) one(ui.spkOut, k); else ui.spkOut = null; }
-  if (ui.speaker) { const k = (clock - ui.speaker.t0) / 0.25; one(ui.speaker, Math.min(1, k)); }
+  if (ui.spkOut) { const k = 1 - (clock - ui.spkOut.t1) / 0.2; if (k > 0) drawSpeakerPortrait(ui.spkOut, k); else ui.spkOut = null; }
+  if (ui.speaker) { const k = (clock - ui.speaker.t0) / 0.25; drawSpeakerPortrait(ui.speaker, Math.min(1, k)); }
 }
 function drawNameTag() {
   const sp = ui.speaker; if (mode === 'battle' || !sp || !sp.name || !ui.dialog) return;
-  g.font = `700 14px ${FONT}`; const w = g.measureText(sp.name).width + 28; panel(228, 268, w, 24, { r: 12, fill: '#37323f', stroke: '#37323f' }); txt(sp.name, 242, 280, { size: 14, color: '#f7f5f1' });
+  g.font = `700 14px ${FONT}`; const w = g.measureText(sp.name).width + 34;
+  g.fillStyle = '#2c2540'; g.beginPath(); g.moveTo(228, 267); g.lineTo(228 + w + 8, 267); g.lineTo(228 + w - 4, 291); g.lineTo(228, 291); g.closePath(); g.fill(); g.fillStyle = ACCENT; g.fillRect(228, 289, w - 3, 3); diamond(239, 279, 3.6, '#ffd08a'); txt(sp.name, 249, 279.5, { size: 14, color: '#fbf5ea' });
 }
 // 大きく見せる演出(はじめて つかまえた子、ライバルの登場など)。Aで閉じる
 async function cutin(img, title, sub) {
@@ -185,19 +195,28 @@ async function cutin(img, title, sub) {
   for (;;) { const b = await nextBtn(); if (b === 'a' || b === 'b') break; }
   ui.overlay = null;
 }
+// 地図の名前などの 帯: 墨色に えんじの 線
+function drawRibbon(cx, y, w, text) {
+  const x = cx - w / 2;
+  g.save(); g.shadowColor = 'rgba(20,12,36,.4)'; g.shadowBlur = 9; g.shadowOffsetY = 3; g.fillStyle = 'rgba(34,27,54,.93)';
+  g.beginPath(); g.moveTo(x - 16, y); g.lineTo(x + w + 16, y); g.lineTo(x + w + 4, y + 16); g.lineTo(x + w + 16, y + 32); g.lineTo(x - 16, y + 32); g.lineTo(x - 4, y + 16); g.closePath(); g.fill(); g.restore();
+  g.fillStyle = ACCENT; g.fillRect(x - 8, y + 28, w + 16, 2); g.fillStyle = 'rgba(240,220,192,.55)'; g.fillRect(x - 8, y + 3, w + 16, 1);
+  diamond(x + 8, y + 15.5, 3.4, '#ffd08a'); diamond(x + w - 8, y + 15.5, 3.4, '#ffd08a');
+  txt(text, cx, y + 16, { align: 'center', size: 16, color: '#fbf3e2' });
+}
 function drawDialog() {
   drawSpeaker();
   const d = ui.dialog; if (!d || (ui.overlay && d.noArrow)) return;
   const x = 12, y = 284, w = d.w, h = 68;
-  panel(x, y, w, h, { fill: '#faf8f5' });
+  panel(x, y, w, h);
   const n = d.t0 < -900 ? 999 : Math.floor((clock - d.t0) * (d.auto ? 55 : 46) * tspd), s = d.text.slice(0, n).split('\n');
   s.forEach((ln, i) => txt(ln, x + 22, y + 22 + i * 27, { size: 17 }));
-  if (d.done && !d.noArrow && !d.auto) { g.fillStyle = PEACH; const bx = x + w - 26, by = y + h - 18 + Math.sin(clock * 6) * 2; g.beginPath(); g.moveTo(bx - 6, by - 4); g.lineTo(bx + 6, by - 4); g.lineTo(bx, by + 5); g.closePath(); g.fill(); }
+  if (d.done && !d.noArrow && !d.auto) lampMark(x + w - 25, y + h - 19 + Math.sin(clock * 6) * 2, 5);
 }
 
 // えらぶ(リスト)。cancel: Bで返す値(falseならBで閉じない)
 async function choose(items, o = {}) {
-  const cols = o.cols || 1, c = { items, idx: o.idx || 0, cols, x: o.x ?? 440, y: o.y ?? 120, w: o.w || 180, rowH: o.rowH || 30, title: o.title, cancel: o.cancel };
+  const cols = o.cols || 1, c = { dark: o.dark, items, idx: o.idx || 0, cols, x: o.x ?? 440, y: o.y ?? 120, w: o.w || 180, rowH: o.rowH || 30, title: o.title, cancel: o.cancel };
   c.h = Math.ceil(items.length / cols) * c.rowH + 20 + (o.title ? 24 : 0);
   if (o.bottom != null) c.y = o.bottom - c.h;
   ui.choice = c; flushBtn();
@@ -213,16 +232,18 @@ async function choose(items, o = {}) {
 }
 function drawChoice() {
   const c = ui.choice; if (!c) return;
-  panel(c.x, c.y, c.w, c.h, { fill: '#faf8f5' });
+  const night = c.dark;
+  panel(c.x, c.y, c.w, c.h, night ? { fill: 'rgba(27,21,46,.86)', stroke: '#f0dcc0', inner: 'rgba(240,220,192,.35)' } : {});
   const top = c.y + 10 + (c.title ? 24 : 0), cw = (c.w - 16) / c.cols;
-  if (c.title) txt(c.title, c.x + 16, c.y + 20, { size: 13, color: MUTED });
-  if (c.cancel !== false) { const bx = c.x, by = Math.max(4, c.y - 30); panel(bx, by, 78, 24, { r: 12, fill: '#e8e2ee', lw: 2 }); txt('← もどる', bx + 39, by + 12.5, { size: 13, align: 'center' }); ui.hits.push({ x: bx - 6, y: by - 6, w: 90, h: 36, act: () => pushBtn('b') }); }
+  if (c.title) { txt(c.title, c.x + 16, c.y + 19, { size: 13, color: night ? '#d8cbe0' : MUTED }); g.fillStyle = ACCENT; g.fillRect(c.x + 14, c.y + 30, c.w - 28, 1.5); }
+  if (c.cancel !== false) { const bx = c.x, by = Math.max(4, c.y - 30); panel(bx, by, 78, 24, { r: 12, fill: '#2c2540', stroke: '#f0dcc0' }); txt('← もどる', bx + 39, by + 12.5, { size: 13, align: 'center', color: '#fbf5ea' }); ui.hits.push({ x: bx - 6, y: by - 6, w: 90, h: 36, act: () => pushBtn('b') }); }
   c.items.forEach((it, i) => {
     const lab = typeof it === 'string' ? it : it.label, col = i % c.cols, row = Math.floor(i / c.cols);
     const x = c.x + 8 + col * cw, y = top + row * c.rowH;
-    if (i === c.idx) { g.fillStyle = '#e8e2ee'; rr(x, y, cw, c.rowH - 2, 9); g.fill(); g.fillStyle = PEACH; g.beginPath(); g.moveTo(x + 8, y + c.rowH / 2 - 5); g.lineTo(x + 8, y + c.rowH / 2 + 3); g.lineTo(x + 15, y + c.rowH / 2 - 1); g.closePath(); g.fill(); }
-    txt(lab, x + 22, y + c.rowH / 2 - 1, { size: 16, color: typeof it === 'object' && it.off ? '#b9aa9c' : INK });
-    if (typeof it === 'object' && it.sub) txt(it.sub, x + cw - 8, y + c.rowH / 2 - 1, { size: 13, color: it.subColor || MUTED, align: 'right' });
+    if (i === c.idx) { const gr = g.createLinearGradient(x, 0, x + cw, 0); gr.addColorStop(0, night ? 'rgba(255,196,128,.34)' : 'rgba(214,150,110,.34)'); gr.addColorStop(1, night ? 'rgba(255,196,128,.06)' : 'rgba(214,150,110,.07)'); g.fillStyle = gr; rr(x, y, cw, c.rowH - 2, 6); g.fill(); g.fillStyle = ACCENT; g.fillRect(x, y + c.rowH - 3.5, cw - 6, 1.5); lampMark(x + 11, y + c.rowH / 2 - 1, 4.4); }
+    const off = typeof it === 'object' && it.off;
+    txt(lab, x + 23, y + c.rowH / 2 - 1, { size: 16, color: off ? (night ? '#7f7494' : '#b9aa9c') : night ? '#fbf5ea' : INK });
+    if (typeof it === 'object' && it.sub) txt(it.sub, x + cw - 8, y + c.rowH / 2 - 1, { size: 13, color: it.subColor || (night ? '#d8cbe0' : MUTED), align: 'right' });
     ui.hits.push({ x, y, w: cw, h: c.rowH - 2, act: () => { if (c.idx !== i) c.idx = i; pushBtn('a'); } });
   });
 }
@@ -287,6 +308,7 @@ function enterMap(id, x, y, dir, quiet) {
   Aud.bgm(m.bgm);
   for (const [flag] of m.grassLit || []) { const key = 'spawn_' + m.id + '_' + flag; if (S.flags[flag] && !S.flags[key]) { S.flags[key] = true; bondEvents.push('あかりに ひかれて、あたらしい 子が あつまってきた!'); break; } }
   if (!quiet) ui.banner = { text: m.name, t0: clock };
+  if (!preview) S.flags['been_' + id] = true;
 }
 // ルール: 主人公も ついてくる子も、かならず「歩ける場所」にいる
 const walkable = (m, x, y) => y >= 0 && x >= 0 && y < m.h && x < m.w && !m.blocked[y][x];
@@ -412,7 +434,7 @@ function drawField() {
   items.push({ y: (p.y + p.oy) * TS + TS - 1, k: 3 });
   if (leadMon()) items.push({ y: (world.fol.y + world.fol.oy) * TS + TS - 2, k: 4 });
   items.sort((a, b) => a.y - b.y);
-  const tree = Art.treeSprite(m.theme);
+  const tree = Art.treeSprite(m.theme), bubbles = [];
   for (const it of items) {
     if (it.k === 0) g.drawImage(tree, it.a * TS - 16 - cx, (it.b + 1) * TS + 4 - 84 - cy);
     else if (it.k === 1) {
@@ -422,23 +444,29 @@ function drawField() {
       else if (o.type === 'gate') g.drawImage(Art.stoneSprite(), (o.x + 1) * TS - 20 - cx, (o.y + 2 + it.part * 4) * TS + 4 - 72 - cy);
       else Art.prop(g, o, o.x * TS - cx, o.y * TS - cy, T, o.look && !!S.flags['look_' + o.look]);
     } else if (it.k === 2) {
-      const n = it.n, bob = (n.ox || n.oy) ? (n.alt ? 1 : 2) : 0;
-      Art.person(g, n.pal, n.pal, n.dir, bob, (n.x + n.ox) * TS + 16 - cx, (n.y + n.oy) * TS + TS - 3 - cy, n.pal === 'child' ? 0.88 : 1);
+      const n = it.n, bob = (n.ox || n.oy) ? (n.alt ? 1 : 2) : 0, G = gestureOf(n), nx = (n.x + n.ox) * TS + 16 - cx, ny = (n.y + n.oy) * TS + TS - 3 - cy;
+      Art.person(g, n.pal, n.pal, G.dir, bob, nx, ny, n.pal === 'child' ? 0.88 : 1, G);
+      if (G.prop) drawProp(G.prop, G.dir, nx + G.dx, ny + G.dy, clock + phaseOf(n.id));
+      if (G.bubble && !ui.dialog) bubbles.push([G.bubble.text, nx, ny - 44, G.bubble.k]);
     } else if (it.k === 4) {
       const f = world.fol, lead = leadMon(), mvg = f.ox || f.oy, sz = 42, bob = mvg ? Math.abs(Math.sin(clock * 14)) * 3 : Math.sin(clock * 2.4) * 0.8;
       const fx = (f.x + f.ox) * TS + 16 - cx, fy = (f.y + f.oy) * TS + TS - 2 - cy;
       g.fillStyle = 'rgba(30,50,30,.22)'; g.beginPath(); g.ellipse(fx, fy, 12, 4, 0, 0, 7); g.fill();
-      const ds = Art.dot(lead.sp); g.imageSmoothingEnabled = false;
-      if (ds) g.drawImage(ds, Math.round(fx - ds.width), Math.round(fy - ds.height * 2 + 2 - bob), ds.width * 2, ds.height * 2); else g.drawImage(Art.sprites[lead.sp], fx - sz / 2, fy - sz * 0.955 - bob, sz, sz);
-      g.imageSmoothingEnabled = true;
+      const ds = Art.dot(lead.sp), P = followerPose(lead);
+      g.save(); g.translate(Math.round(fx), Math.round(fy + P.dy)); g.scale((P.flip ? -1 : 1) * P.sx, P.sy); g.imageSmoothingEnabled = false;
+      if (ds) g.drawImage(ds, -ds.width, Math.round(-ds.height * 2 + 2 - bob), ds.width * 2, ds.height * 2); else g.drawImage(Art.sprites[lead.sp], -sz / 2, -sz * 0.955 - bob, sz, sz);
+      g.restore(); g.imageSmoothingEnabled = true;
+      if (P.sleep) drawZzz(fx, fy - 30); else if (P.bubble && !world.emote) bubbles.push([P.bubble.text, fx, fy - 40, P.bubble.k]);
     } else {
       const bob = (p.ox || p.oy) ? (p.alt ? 1 : 2) : 0, bx = (p.x + p.ox) * TS + 16 - cx, by = (p.y + p.oy) * TS + TS - 3 - cy;
-      Art.person(g, 'hero', 'hero', p.dir, bob, bx, by);
+      const idleDir = heroIdleDir();
+      Art.person(g, 'hero', 'hero', idleDir, bob, bx, by, 1, { blink: (clock % 4.3) < 0.13, sy: bob ? 1 : 1 + Math.sin(clock * 2) * 0.015 });
       const tx = Math.round(p.x + p.ox + 0.01), ty = Math.round(p.y + p.oy + 0.01);
       if (!bg && m.t[ty] && m.t[ty][tx] === 'g') Art.tallFront(g, tx * TS - cx, ty * TS - cy, T, Art.hash(tx, ty), m.theme);
     }
   }
   drawSky(m, cx, cy);
+  for (const b of bubbles) drawBubble(...b);
   if (bg && m.lamps) { // 街灯のあかり
     if (world.night > 0) drawNight(m, cx, cy, (p.x + p.ox) * TS + 16 - cx, (p.y + p.oy) * TS + TS - cy);
     const lit = S.flags['lit_' + m.id];
@@ -484,7 +512,7 @@ function drawField() {
     const k = (clock - world.emote.t0) / 1.5, f = world.fol, ex = (f.x + f.ox) * TS + 16 - cx, ey = (f.y + f.oy) * TS - 22 - cy;
     for (let i = 0; i < 3; i++) { const kk = clamp(k * 1.4 - i * 0.18, 0, 1); if (kk <= 0 || kk >= 1) continue; g.globalAlpha = 1 - kk * kk; heart(ex + (i - 1) * 10 + Math.sin(kk * 6 + i) * 3, ey - kk * 26, 5 + (i === 1 ? 2 : 0), i === 1 ? '#ff7f9f' : '#ffa9bf'); g.globalAlpha = 1; }
   }
-  if (ui.banner && !(ui.skyChip && ui.choice)) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(VW / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, VW / 2, y + 17, { align: 'center', size: 16 }); if (bt2 === m.name) txt(skyLabel(), VW / 2, y + 46, { align: 'center', size: 12, color: '#fbf6ea', stroke: 'rgba(40,34,56,.82)', sw: 4 }); } else ui.banner = null; }
+  if (ui.banner && !(ui.skyChip && ui.choice)) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); drawRibbon(VW / 2, y, bw, bt2); if (bt2 === m.name) txt(skyLabel(), VW / 2, y + 46, { align: 'center', size: 12, color: '#fbf6ea', stroke: 'rgba(40,34,56,.82)', sw: 4 }); } else ui.banner = null; }
 }
 
 // ---------- 裏から もどったとき、消えた絵を 描きなおす ----------
@@ -543,7 +571,7 @@ function updateAmbient() {
 function tick(dt) {
   clock += dt;
   if (Math.floor(clock * 3) !== Math.floor((clock - dt) * 3)) updateAmbient();
-  if (mode === 'field') { S.time += dt; updateField(dt); const wt = warmth(); warmNow = warmNow == null ? wt : warmNow + (wt - warmNow) * Math.min(1, dt * 0.7); if (Math.floor(clock) !== Math.floor(clock - dt)) Aud.setWarm(warmNow); }
+  if (mode === 'field') { S.time += dt; updateField(dt); diaryTick(); const wt = warmth(); warmNow = warmNow == null ? wt : warmNow + (wt - warmNow) * Math.min(1, dt * 0.7); if (Math.floor(clock) !== Math.floor(clock - dt)) Aud.setWarm(warmNow); }
   for (let i = sleepers.length - 1; i >= 0; i--) if (sleepers[i].t <= clock) { const s = sleepers.splice(i, 1)[0]; s.r(); }
   const fw = frameW.splice(0); for (const r of fw) r();
   document.body.classList.toggle('modal', mode !== 'field' || modalActive());

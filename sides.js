@@ -2,7 +2,7 @@
 // 寄り道の 小さな 話: こもれびの森の 灯ろう / かがみ池の 絵かき / ひとつ星駅の 終電 / 星見の尾根
 // 一枚絵は assets/side_<名前>.webp(なければ 絵なしで 話だけ 進む)
 const SIDE_ART = {
-  forest: '寄り道 「森の 灯ろう」', lake: '寄り道 「水面の 月」', station: '寄り道 「来なかった 終電」', ridge: '寄り道 「4つの あかり」',
+  forest: '寄り道 「森の 灯ろう」', lake: '寄り道 「水面の 月」', station: '寄り道 「来なかった 終電」', ridge: '寄り道 「尾根の あかり」', ridge4: '寄り道 「4つの あかり」',
 };
 const sideImg = {};
 function loadSide(k) {
@@ -69,9 +69,10 @@ async function lookScript(id) {
     S.flags.look_cairn = true;
     const n = ['lit_town', 'lit_town2', 'lit_town3', 'lit_town4'].filter((f) => S.flags[f]).length;
     const first = !S.flags.side_ridge; S.flags.side_ridge = true;
-    await sideScene('ridge', n >= 4
+    if (n >= 4) S.flags.side_ridge4 = true;
+    await sideScene(n >= 4 ? 'ridge4' : 'ridge', n >= 4
       ? ['夜の 底に、4つの あかりが ならんでいる。', 'ひなたの 灯り、団地の 灯り、港の 灯り、山の 灯り。\nどれも、旅の とちゅうで 出会った 色だ。', '……ひとりで はじめた 道が、\nいまは こんなに あかるい。']
-      : [`夜の 底に、${n}つの あかりが 見える。`, 'まだ くらい 町の ほうで、\n小さな 光が ひとつ、またたいた 気がした。']);
+      : [`夜の 底に、${n}つの あかりが 見える。`, '山の 町の ほうは、まだ くらい。\nそこで 小さな 光が ひとつ、またたいた 気がした。']);
     if (first) { await giveReward(400, { ball: 5 }); }
     save(); return;
   }

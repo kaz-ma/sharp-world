@@ -156,6 +156,7 @@ function drawBattle() {
   if (b.dim > 0.01) { g.fillStyle = `rgba(14,10,30,${b.dim})`; g.fillRect(0, 0, W, H); } // 技の あいだは 背景を 暗く
   if (b.foe) drawMon(b.foe.sp, 462, 168, 122, b.es, 1.3, b.foe.shiny);
   if (b.me) drawMon(b.me.sp, 158, 262, 156, b.ps, 0, b.me.shiny);
+  drawMonMood(b.foe, b.es, 508, 56); drawMonMood(b.me, b.ps, 214, 110);
   if (b.ball && b.ball.vis) Art.ball(g, b.ball.x, b.ball.y, b.ball.r || 14, b.ball.rot);
   drawFx();
   if (b.flash) { const k = (clock - b.flash.t0) / 0.22; if (k < 1) { g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(${b.flash.rgb},${b.flash.a * (1 - k)})`; g.fillRect(0, 0, W, H); g.restore(); } else b.flash = null; }
@@ -494,19 +495,19 @@ async function listScreen(o) {
   let scroll = 0;
   ui.overlay = () => {
     g.fillStyle = 'rgba(30,25,40,.5)'; g.fillRect(0, 0, W, H);
-    panel(8, 8, 302, 344, { fill: '#faf8f5' }); txt(o.title, 24, 27, { size: 17 });
+    panel(8, 8, 302, 344); txt(o.title, 26, 27, { size: 17 }); g.fillStyle = ACCENT; g.fillRect(22, 39, 274, 1.5);
     if (idx < scroll) scroll = idx; if (idx >= scroll + vis) scroll = idx - vis + 1;
     for (let k = 0; k < vis && scroll + k < o.n; k++) {
       const i = scroll + k, x = 16, y = top + k * rowH, w = 286;
-      if (i === idx) { g.fillStyle = '#e8e2ee'; rr(x, y, w, rowH - 3, 10); g.fill(); g.strokeStyle = PEACH; g.lineWidth = 2; g.stroke(); }
+      if (i === idx) { g.fillStyle = 'rgba(214,150,110,.26)'; rr(x, y, w, rowH - 3, 6); g.fill(); g.strokeStyle = ACCENT; g.lineWidth = 1.8; g.stroke(); }
       o.rowFn(i, x, y, w, rowH - 3, i === idx);
       ui.hits.push({ x, y, w, h: rowH - 3, act: () => { if (idx === i) pushBtn('a'); else { idx = i; Aud.sfx('select'); } } });
     }
     if (o.n > vis) { txt(scroll > 0 ? '▲' : '', 290, 36, { size: 11, color: MUTED }); txt(scroll + vis < o.n ? '▼' : '', 290, 344, { size: 11, color: MUTED }); }
-    panel(318, 8, 314, 344, { fill: '#faf8f5' }); o.detailFn(idx, 328, 18, 296, 324);
-    if (o.hint) txt(o.hint, 16, 342, { size: 11, color: MUTED });
-    g.fillStyle = '#dcd5e4'; rr(240, 330, 62, 18, 9); g.fill(); txt('もどる', 271, 339, { size: 12, align: 'center' });
-    if (o.extra) { const L = o.extra.label(idx); g.fillStyle = '#e8d6c9'; rr(150, 330, 84, 18, 9); g.fill(); txt(L, 192, 339, { size: 12, align: 'center' }); ui.hits.push({ x: 146, y: 326, w: 92, h: 26, act: () => o.extra.act(idx) }); }
+    panel(318, 8, 314, 344); o.detailFn(idx, 328, 18, 296, 324);
+    if (o.hint) txt(o.hint, 24, 338, { size: 11, color: MUTED });
+    g.fillStyle = '#2c2540'; rr(236, 328, 62, 18, 5); g.fill(); txt('もどる', 267, 337, { size: 12, align: 'center', color: '#fbf5ea' });
+    if (o.extra) { const L = o.extra.label(idx); g.fillStyle = '#e6cdb8'; rr(146, 328, 84, 18, 5); g.fill(); txt(L, 188, 337, { size: 12, align: 'center' }); ui.hits.push({ x: 146, y: 326, w: 92, h: 26, act: () => o.extra.act(idx) }); }
     ui.hits.push({ x: 240, y: 328, w: 62, h: 22, act: () => pushBtn('b') });
   };
   for (;;) {
@@ -518,7 +519,7 @@ async function listScreen(o) {
     else if (b === 'b' && o.cancel !== false) { Aud.sfx('back'); ui.overlay = null; return -1; }
   }
 }
-function typeChip(x, y, t) { const T = TYPES[t]; g.fillStyle = T.color; rr(x, y, 44, 16, 8); g.fill(); txt(T.name, x + 22, y + 8.5, { size: 11, color: '#fff', align: 'center' }); }
+function typeChip(x, y, t) { const T = TYPES[t]; g.fillStyle = T.color; rr(x, y, 44, 16, 4); g.fill(); g.strokeStyle = 'rgba(45,36,64,.55)'; g.lineWidth = 1; g.stroke(); txt(T.name, x + 22, y + 8.5, { size: 11, color: '#fff', align: 'center', stroke: 'rgba(45,36,64,.45)', sw: 2.4 }); }
 function monDetail(m, x, y, w) {
   const sp = SPECIES[m.sp];
   g.drawImage(Art.sprites[m.sp], x + 4, y + 2, 96, 96);
@@ -532,7 +533,7 @@ function monDetail(m, x, y, w) {
   for (let i = 0; i < 4; i++) { const hx = x + 76 + i * 22; heart(hx, y + 157, 7, i < bl ? '#ff7f9f' : '#e0d9e4'); if (i === bl && bl < 4 && bf > 0.02) { g.save(); g.beginPath(); g.rect(hx - 9, y + 147, 18 * bf, 20); g.clip(); heart(hx, y + 157, 7, '#ffb3c7'); g.restore(); } }
   if (bl > 0) txt(BOND_TXT[bl], x + 170, y + 158, { size: 12, color: '#d9735b' });
   txt('おぼえている わざ', x + 8, y + 182, { size: 12, color: MUTED });
-  movesOf(m).forEach((id, i) => { const mv = MOVES[id], yy = y + 192 + i * 32; g.fillStyle = '#eeeaf1'; rr(x + 4, yy, w - 8, 28, 9); g.fill(); typeChip(x + 12, yy + 6, mv.t); txt(mv.n, x + 64, yy + 15, { size: 15 }); txt('いりょく ' + mv.p, x + w - 14, yy + 15, { size: 12, color: MUTED, align: 'right' }); });
+  movesOf(m).forEach((id, i) => { const mv = MOVES[id], yy = y + 192 + i * 32; g.fillStyle = '#ece1d0'; rr(x + 4, yy, w - 8, 28, 5); g.fill(); typeChip(x + 12, yy + 6, mv.t); txt(mv.n, x + 64, yy + 15, { size: 15 }); txt('いりょく ' + mv.p, x + w - 14, yy + 15, { size: 12, color: MUTED, align: 'right' }); });
 }
 async function partyScreen(o = {}) {
   const L = o.list || S.party, view = !o.list && (!o.title || o.title === 'なかま'); let sel = null; // いれかえで えらんだ なかま
@@ -576,27 +577,6 @@ async function bagScreen(o = {}) {
       if (id === 'ball' && !o.battle) { Aud.sfx('back'); await say('ここでは つかえないよ。草むらで モンスターに なげよう!'); return undefined; }
       if (id === 'cure' && !o.battle) { Aud.sfx('back'); await say('いまは つかう ひつようが ないよ。'); return undefined; }
       Aud.sfx('ok'); return id;
-    },
-  });
-}
-async function dexScreen() {
-  const got = SPECIES_ORDER.filter((s) => S.caught[s]).length;
-  return listScreen({
-    title: `ずかん  ${got} / ${SPECIES_ORDER.length}`, n: SPECIES_ORDER.length, rowH: 46, onA: () => undefined,
-    rowFn: (i, x, y, w) => {
-      const sp = SPECIES_ORDER[i], seen = S.seen[sp], got = S.caught[sp];
-      txt('No.' + String(i + 1).padStart(2, '0'), x + 10, y + 20, { size: 12, color: MUTED });
-      if (seen) { g.drawImage(Art.sprites[sp], x + 50, y - 2, 44, 44); txt(SPECIES[sp].n, x + 102, y + 20, { size: 15 }); if (got) Art.ball(g, x + w - 20, y + 21, 8, 0); }
-      else { g.save(); g.filter = 'brightness(0)'; g.globalAlpha = 0.25; g.drawImage(Art.sprites[sp], x + 50, y - 2, 44, 44); g.restore(); txt('？？？？', x + 102, y + 20, { size: 15, color: MUTED }); }
-    },
-    detailFn: (i, x, y, w) => {
-      const sp = SPECIES_ORDER[i], seen = S.seen[sp], got = S.caught[sp], d = SPECIES[sp];
-      if (!seen) { txt('まだ であっていない…', x + w / 2, y + 150, { size: 17, color: MUTED, align: 'center' }); return; }
-      g.drawImage(Art.sprites[sp], x + w / 2 - 80, y + 8, 160, 160);
-      txt(d.n, x + w / 2, y + 184, { size: 22, align: 'center' }); typeChip(x + w / 2 - 22, y + 202, d.t);
-      if (got) { if (ABIL[d.ab]) { txt('とくせい', x + 14, y + 232, { size: 12, color: MUTED }); txt(ABIL[d.ab].n, x + 66, y + 232, { size: 14 }); wrap(ABIL[d.ab].d, w - 28, 12).slice(0, 2).forEach((l, k) => txt(l, x + 14, y + 252 + k * 17, { size: 12, color: MUTED })); }
-        wrap(d.dex, w - 24, 14).slice(0, 2).forEach((l, k) => txt(l, x + 14, y + 292 + k * 20, { size: 13 })); }
-      else txt('つかまえると くわしく わかるよ', x + w / 2, y + 256, { size: 14, color: MUTED, align: 'center' });
     },
   });
 }

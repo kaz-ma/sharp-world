@@ -64,15 +64,15 @@ async function storyAfterLight(id) {
     await memoryScene(id);
     await talk('farmer', '手で とめた…?\nそれじゃ、あの 停電は、発電所の 番人が…?');
     await talk('nboy', '番人って、山に こもってる おじいさん?\nみんな、わるい 人だって 言ってるよ。');
-    const m = await minatoEnter(); await talk('rival', '……ちがう。', 'そんなはず、ないよ。\nきっと、なにか わけが あったんだ。'); await minatoLeave(m);
+    const m = await minatoEnter(); await talk('rival', '[sad]……ちがう。', '[angry]そんなはず、ないよ。\nきっと、なにか わけが あったんだ。'); await minatoLeave(m);
   } else if (id === 'town3') {
     await talk('goro', '…思い出すな。\n発電所の 番人は、わしの 友だちだ。', 'あの 嵐の夜、ダムは もう こわれそうだった。');
     await memoryScene(id);
     await talk('goro', 'この 港が 沈まなかったのは、あいつらの おかげだ。', 'だが あいつは、言いわけを ひとつも しなかった。');
     const m = await minatoEnter();
-    await talk('rival', 'ゴロウさん。その話…ほんとう?');
-    await talk('goro', 'ミナトか。…大きく なったな。');
-    await talk('rival', '番人は、ぼくの じいちゃんなんだ。', '町を くらくした 悪い人だって、ずっと 言われてきた。\nだから ひとりで 強くなって、見かえしたかった。', 'ぼくは 山へ 行く。\n……きみにも、来てほしい。', 'そこで こんどは、本気で しょうぶだ。');
+    await talk('rival', '[surprise]ゴロウさん。その話…ほんとう?');
+    await talk('goro', '[joy]ミナトか。…大きく なったな。');
+    await talk('rival', '[sad]番人は、ぼくの じいちゃんなんだ。', '[sad]町を くらくした 悪い人だって、ずっと 言われてきた。\nだから ひとりで 強くなって、見かえしたかった。', '[think]ぼくは 山へ 行く。\n……きみにも、来てほしい。', '[fight]そこで こんどは、本気で しょうぶだ。');
     await minatoLeave(m);
     S.flags.minato_mountain = true; bondEvents.push('ミナトは 山の町「ヤマノハ」へ むかった');
   }
