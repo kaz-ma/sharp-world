@@ -519,6 +519,7 @@ async function newGame() {
   });
 }
 async function continueGame() {
+  for (const x of [9, 36]) if (S.flags[`spot_town3_${x}_15`]) S.flags[`spot_town3_${x}_14`] = true; // 光る場所を 岸へ 移した
   if (S.flags.granny && !S.flags.rod) { S.flags.rod = true; bondEvents.push('おばあさんの つりざおが みつかった! みずべで Aを おそう'); }
   await fade(1, 0.4); mode = 'field'; enterMap(S.map, S.x, S.y, S.dir, true); ui.banner = { text: world.map.name, t0: clock }; await fade(0, 0.5);
 }

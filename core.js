@@ -253,7 +253,7 @@ const SPOTS = {
   route2: [{ x: 6, y: 5, item: 'potion' }, { x: 20, y: 11, item: 'cure' }, { x: 46, y: 5, item: 'ball', n: 2 }],
   town2: [{ x: 8, y: 18, item: 'cure' }, { x: 30, y: 19, item: 'coin', n: 200 }],
   route3: [{ x: 8, y: 5, item: 'potion', n: 2 }, { x: 22, y: 11, item: 'cure' }, { x: 45, y: 13, item: 'ball', n: 2 }],
-  town3: [{ x: 9, y: 15, item: 'coin', n: 150 }, { x: 36, y: 15, item: 'potion', n: 2 }],
+  town3: [{ x: 9, y: 14, item: 'coin', n: 150 }, { x: 36, y: 14, item: 'potion', n: 2 }],
 };
 for (const k in SPOTS) MAPS[k].spots = SPOTS[k];
 // つり: 水の方を向いてAボタン。場所ごとに つれる子([種族, 重み])とレベル
@@ -262,7 +262,7 @@ const FISH = {
   route: { list: [['hinatagaeru', 55], ['shizukufin', 45]], lv: [3, 6] },
   route2: { list: [['hikaritanishi', 40], ['hinatagaeru', 30], ['shizukufin', 30]], lv: [7, 9] },
   route3: { list: [['funenko', 30], ['shizukufin', 40], ['hikaritanishi', 30]], lv: [11, 13] },
-  town3: { list: [['funenko', 30], ['sabikani', 30], ['shizukufin', 20], ['hikaritanishi', 20]], lv: [11, 14], waterRows: 16 },
+  town3: { list: [['funenko', 30], ['sabikani', 30], ['shizukufin', 20], ['hikaritanishi', 20]], lv: [11, 14], waterRows: 15 },
 };
 const isWater = (m, x, y) => !!FISH[m.id] && y >= 0 && x >= 0 && y < m.h && x < m.w && (m.t[y][x] === '~' || (FISH[m.id].waterRows != null && y >= FISH[m.id].waterRows));
 const world = { map: MAPS.village, p: { x: 6, y: 8, dir: 'd', ox: 0, oy: 0, alt: false, turnT: 0, pending: false }, npcs: [], bang: null, emote: null, fol: { x: 6, y: 8, ox: 0, oy: 0, alt: false } };
@@ -271,12 +271,19 @@ const STEP = 0.2;
 function enterMap(id, x, y, dir, quiet) {
   const m = MAPS[id]; world.map = m;
   for (const k in MAPS) if (MAPS[k] !== m) delete MAPS[k]._cache; // いまの地図だけ、地面の絵を持つ
+  if (!walkable(m, x, y)) [x, y] = nearestWalkable(m, x, y); // 古いセーブなどで 歩けない所に いたら 直す
   const p = world.p; p.x = x; p.y = y; p.dir = dir; p.ox = p.oy = 0; p.pending = false; p.turnT = 0;
   world.npcs = m.npcs.map((n) => ({ ...n, ox: 0, oy: 0, step: 0, tt: rnd(2, 5), idle: n.idle ?? ['child', 'granny', 'traveler'].includes(n.id) }));
   placeFollower(); world.cam = world.lampK = null; world.night = 0;
   Aud.bgm(m.bgm);
   for (const [flag] of m.grassLit || []) { const key = 'spawn_' + m.id + '_' + flag; if (S.flags[flag] && !S.flags[key]) { S.flags[key] = true; bondEvents.push('あかりに ひかれて、あたらしい 子が あつまってきた!'); break; } }
   if (!quiet) ui.banner = { text: m.name, t0: clock };
+}
+// ルール: 主人公も ついてくる子も、かならず「歩ける場所」にいる
+const walkable = (m, x, y) => y >= 0 && x >= 0 && y < m.h && x < m.w && !m.blocked[y][x];
+function nearestWalkable(m, x, y) { // 歩けない場所を さしていたら、いちばん近い 歩ける場所
+  for (let r = 0; r < Math.max(m.w, m.h); r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r && walkable(m, x + dx, y + dy) && !m.npcs.some((n) => n.x === x + dx && n.y === y + dy)) return [x + dx, y + dy];
+  return [x, y];
 }
 const npcAt = (x, y) => world.npcs.find((n) => n.x === x && n.y === y);
 function solidAt(x, y) { const m = world.map; return y < 0 || x < 0 || y >= m.h || x >= m.w || m.blocked[y][x] || !!npcAt(x, y); }
@@ -288,7 +295,7 @@ function placeFollower(first) {
   const v = d ? DV[d] : [0, 0]; world.fol = { x: p.x + v[0], y: p.y + v[1], ox: 0, oy: 0, alt: false };
 }
 // 先頭のモンスターは、主人公がいた場所へ ついてくる
-function followStep(px0, py0) { const f = world.fol; f.ox = f.x + f.ox - px0; f.oy = f.y + f.oy - py0; f.x = px0; f.y = py0; f.alt = !f.alt; if (Math.abs(f.ox) > 1.5 || Math.abs(f.oy) > 1.5) f.ox = f.oy = 0; }
+function followStep(px0, py0) { const f = world.fol; if (!walkable(world.map, px0, py0)) return; f.ox = f.x + f.ox - px0; f.oy = f.y + f.oy - py0; f.x = px0; f.y = py0; f.alt = !f.alt; if (Math.abs(f.ox) > 1.5 || Math.abs(f.oy) > 1.5) f.ox = f.oy = 0; }
 function tryMove(d) {
   const p = world.p, v = DV[d], nx = p.x + v[0], ny = p.y + v[1], m = world.map;
   const door = m.doors[nx + ',' + ny];
