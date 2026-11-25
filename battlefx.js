@@ -69,7 +69,7 @@ function spriteBox(sp, s) { // 絵の 中で、キャラが ある 範囲
   return (boxes[sp] = x1 > x0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : { x: 0, y: 0, w: s.width, h: s.height });
 }
 // 目の 位置(絵の 範囲の中の 割合)と、寄る 大きさ
-const EYES = { mikanya: [0.40, 0.34, 600], hotaruusagi: [0.50, 0.49, 560], pukurisu: [0.23, 0.645, 900], kinokokko: [0.50, 0.52, 640], hinatagaeru: [0.50, 0.56, 620], shizukufin: [0.50, 0.58, 620] };
+const EYES = { mikanya: [0.40, 0.34, 600], hotaruusagi: [0.50, 0.49, 560], pukurisu: [0.23, 0.645, 900], kinokokko: [0.50, 0.52, 640], hinatagaeru: [0.50, 0.56, 620], shizukufin: [0.50, 0.58, 620], himoriusagi: [0.49, 0.357, 600], yuuhineko: [0.235, 0.269, 950], birisuzume: [0.496, 0.421, 440] };
 async function eyeCutin(mon, small, shiny) {
   const sp = mon.sp, base = SPECIES[sp].from || sp, [ex, ey, wide] = EYES[sp] || EYES[base] || [0.5, 0.42, 560], img = (shiny ? Art.shiny(sp) : Art.raw(sp)) || Art.sprites[sp], box = spriteBox(sp + (shiny ? '*' : ''), img);
   const col = TYPES[SPECIES[sp].t].color, t0 = clock; flushBtn(); ui.dialog = null;

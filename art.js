@@ -168,7 +168,7 @@ const Art = (() => {
   };
 
   const imgs = {}, bgs = {};
-  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0 }, hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
+  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0 }, hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 }, himoriusagi: { tol: 30, erode: 0 }, yuuhineko: { tol: 34, erode: 0, holes: [[590, 396]] }, birisuzume: { tol: 34, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
   function removeBg(src, opt = {}) { // lab.jsと同じ方法: ふちから広がる背景色だけを透明にする
     const w = src.width, h = src.height, c = cv(w, h), g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(src, 0, 0);
@@ -186,6 +186,7 @@ const Art = (() => {
       const push = (x, y) => { const i = y * w + x; if (!seen[i] && near(i)) { seen[i] = 1; st.push(i); } };
       for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
       for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+      for (const [x, y] of opt.holes || []) push(x, y); // 毛や ひげに かこまれて ふちから 届かない すきま
       while (st.length) { const i = st.pop(), x = i % w, y = (i - x) / w; if (x > 0) push(x - 1, y); if (x < w - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < h - 1) push(x, y + 1); }
       for (let i = 0; i < w * h; i++) if (seen[i]) a[i] = 0;
       for (let k = 0; k < (opt.erode ?? 1); k++) { const b2 = a.slice(); for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x; if (a[i] && (!a[i - 1] || !a[i + 1] || !a[i - w] || !a[i + w])) b2[i] = 0; } a.set(b2); }
