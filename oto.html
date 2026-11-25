@@ -23,15 +23,18 @@
   <p>「オープニング」は、タップの音 → コマが5枚出る音 → 題字の音 → タイトルの曲、の順に流れます。<br>音が出ないときは、スマホの消音(マナーモード)と音量を確認してください。</p>
   <p id="warn"></p>
   <div id="list"></div>
+  <h2 style="margin:22px 0 6px">町と寄り道の曲</h2>
+  <p>町の曲は、あかりをともすと楽器がふえます。聴き比べてみてください。</p>
+  <div id="towns"></div>
   <button class="stop" id="stop" type="button">とめる</button>
 </main>
-<script src="audio.js?v=mwvm7cp2"></script>
+<script src="audio.js?v=mwvt3kwd"></script>
 <script>
 const SETS = [['pick', '★ いま ゲームで使っている音', '最初のタップは オルゴール。そのあと(コマ・題字・曲)は 90年代アニメ。'], ['now', '0 はじめの音', '鈴と低い和音。静かな曲。'], ['a', '1 オルゴール', '小さな箱のオルゴール。3拍子で、なつかしい感じ。'], ['b', '2 90年代アニメ', 'ドラムとシンセ。アニメの始まりのような、勢いのある感じ。'],
   ['c', '3 雨とピアノ', '雨の音と、ゆっくりしたピアノ。いちばん寂しく、落ち着いた感じ。'], ['d', '4 電子の灯り', '近未来の電子音。広がりと、こだまがある感じ。'], ['e', '5 和の夕暮れ', 'こと・風鈴・太鼓。日本の夕方のような感じ。']];
 let timers = [];
 const later = (sec, fn) => timers.push(setTimeout(fn, sec * 1000));
-function stop() { timers.forEach(clearTimeout); timers = []; Aud.bgm(null); document.querySelectorAll('article').forEach((e) => e.classList.remove('on')); }
+function stop() { timers.forEach(clearTimeout); timers = []; Aud.bgm(null); Aud.ambient(null); document.querySelectorAll('article').forEach((e) => e.classList.remove('on')); }
 function play(k, card, songOnly) {
   Aud.unlock(); stop(); card.classList.add('on'); Aud.setTheme(k);
   if (songOnly) { Aud.bgm('title'); return; }
@@ -47,6 +50,25 @@ for (const [k, name, desc] of SETS) {
   card.querySelector('[data-op]').onclick = () => play(k, card, false);
   card.querySelector('[data-song]').onclick = () => play(k, card, true);
   document.getElementById('list').appendChild(card);
+}
+const TOWN_SONGS = [['village', 'ひなた村', 'オルゴールの三拍子。', true], ['town1', 'ひだまり町', '夕方のやわらかいピアノ。', true], ['town2', 'ミドリ団地', '電子の音の粒。', true], ['town3', 'ナギサ港', '波のようにゆれるピアノ。', true], ['town4', 'ヤマノハ', 'こと・風鈴・山のひびき。', true],
+  ['forest', 'こもれびの森', '木の打楽器と笛。', false], ['lake', 'かがみ池', 'まばらなオルゴール。', false], ['station', 'ひとつ星駅', 'ひとりのピアノと遠いレール。', false], ['ridge', '星見の尾根', '広い空と鐘。', false]];
+for (const [k, name, desc, two] of TOWN_SONGS) {
+  const card = document.createElement('article');
+  card.innerHTML = `<h2>${name}</h2><p>${desc}</p><div class="row"><button type="button" data-a>${two ? 'あかりの前' : '曲を聴く'}</button>${two ? '<button type="button" data-b>あかりの後</button>' : ''}</div>`;
+  const go = (lit) => { Aud.unlock(); stop(); card.classList.add('on'); Aud.setLit(lit); Aud.bgm(k); };
+  card.querySelector('[data-a]').onclick = () => go(false);
+  if (two) card.querySelector('[data-b]').onclick = () => go(true);
+  document.getElementById('towns').appendChild(card);
+}
+const AMB_LIST = [['village', 'ひなた村', '風と鳥。夜は虫。'], ['forest', '森', '葉ずれと鳥。夜はふくろう。'], ['lake', '池', '水の音とかえる。'], ['harbor', '港', '波、かもめ、霧笛。'], ['town2', 'ミドリ団地', '低いうなりとドローン。'], ['mountain', '山', '強めの風。'], ['station', '廃駅', 'きしみと、遠い踏切。']];
+const sec = document.createElement('div'); sec.innerHTML = '<h2 style="margin:22px 0 6px">環境音</h2><p>歩いているあいだ、曲のうしろで流れる音です。ときどき鳴る音は、数秒おきです。</p>'; document.querySelector('main').insertBefore(sec, document.getElementById('stop'));
+for (const [k, name, desc] of AMB_LIST) {
+  const card = document.createElement('article');
+  card.innerHTML = `<h2>${name}</h2><p>${desc}</p><div class="row"><button type="button" data-d>昼</button><button type="button" data-n>夜</button><button type="button" data-r>雨</button></div>`;
+  const go = (night, rain) => { Aud.unlock(); stop(); card.classList.add('on'); Aud.ambient(k, night, rain); };
+  card.querySelector('[data-d]').onclick = () => go(false, false); card.querySelector('[data-n]').onclick = () => go(true, false); card.querySelector('[data-r]').onclick = () => go(false, true);
+  sec.appendChild(card);
 }
 document.getElementById('stop').onclick = stop;
 if (Aud.muted) { Aud.setMute(false); document.getElementById('warn').textContent = 'ゲームの「おと」が「なし」になっていたので、「あり」にしました。'; }

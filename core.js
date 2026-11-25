@@ -233,14 +233,15 @@ async function wipe(dur = 0.5) {
 async function flashFx(n = 3) { for (let i = 0; i < n; i++) { await anim(0.1, (k) => { ui.flash = 1 - k; }); } ui.flash = 0; }
 
 // ---------- 世界(マップ・歩く) ----------
-const MAPS = { village: buildVillage(), route: buildRoute(), town: buildTown(), route2: buildRoute2(), town2: buildTown2(), route3: buildRoute3(), town3: buildTown3(), route4: buildRoute4(), town4: buildTown4() };
+const MAPS = { village: buildVillage(), route: buildRoute(), town: buildTown(), route2: buildRoute2(), town2: buildTown2(), route3: buildRoute3(), town3: buildTown3(), route4: buildRoute4(), town4: buildTown4(), forest: buildForest(), lake: buildLake(), station: buildStation(), ridge: buildRidge() };
 function prepMap(m) {
-  m.blocked = m.t.map((r) => r.map((c) => 'T~F#'.includes(c)));
-  m.doors = {}; m.signs = {};
+  m.blocked = m.t.map((r) => r.map((c) => 'T~F#R'.includes(c)));
+  m.doors = {}; m.signs = {}; m.looks = {};
   for (const o of m.objects) {
     if (o.type === 'house') { for (let j = 0; j < o.h; j++) for (let i = 0; i < o.w; i++) m.blocked[o.y + j][o.x + i] = true; m.doors[(o.x + Math.floor((o.w - 1) / 2)) + ',' + (o.y + o.h - 1)] = o.door; }
     else if (o.type === 'door') m.doors[o.x + ',' + o.y] = o.door;
     else if (o.type === 'sign') { m.blocked[o.y][o.x] = true; m.signs[o.x + ',' + o.y] = o.text; }
+    else if (o.look) { for (let j = 0; j < (o.h || 1); j++) for (let i = 0; i < (o.w || 1); i++) { m.blocked[o.y + j][o.x + i] = true; m.looks[(o.x + i) + ',' + (o.y + j)] = o.look; } }
     else if (o.type === 'gate') { for (let j = 0; j < o.h; j++) for (let i = 0; i < o.w; i++) if (![7, 8].includes(o.y + j)) m.blocked[o.y + j][o.x + i] = true; }
   }
 }
@@ -256,6 +257,10 @@ const SPOTS = {
   town3: [{ x: 9, y: 14, item: 'coin', n: 150 }, { x: 36, y: 14, item: 'potion', n: 2 }],
   route4: [{ x: 8, y: 5, item: 'potion', n: 2 }, { x: 23, y: 11, item: 'cure', n: 2 }, { x: 46, y: 12, item: 'ball', n: 3 }],
   town4: [{ x: 36, y: 15, item: 'potion', n: 3 }, { x: 3, y: 16, item: 'coin', n: 300 }],
+  forest: [{ x: 4, y: 3, item: 'potion', n: 2 }, { x: 30, y: 17, item: 'ball', n: 3 }, { x: 4, y: 18, item: 'coin', n: 120 }],
+  lake: [{ x: 3, y: 19, item: 'cure', n: 2 }, { x: 32, y: 2, item: 'ball', n: 3 }, { x: 17, y: 14, item: 'coin', n: 220 }],
+  station: [{ x: 6, y: 8, item: 'coin', n: 300 }, { x: 35, y: 17, item: 'potion', n: 3 }, { x: 2, y: 16, item: 'cure', n: 2 }],
+  ridge: [{ x: 4, y: 7, item: 'ball', n: 5 }, { x: 29, y: 13, item: 'potion', n: 3 }, { x: 28, y: 2, item: 'coin', n: 500 }],
 };
 for (const k in SPOTS) MAPS[k].spots = SPOTS[k];
 // つり: 水の方を向いてAボタン。場所ごとに つれる子([種族, 重み])とレベル
@@ -265,6 +270,8 @@ const FISH = {
   route2: { list: [['hikaritanishi', 40], ['hinatagaeru', 30], ['shizukufin', 30]], lv: [7, 9] },
   route3: { list: [['funenko', 30], ['shizukufin', 40], ['hikaritanishi', 30]], lv: [11, 13] },
   town3: { list: [['funenko', 30], ['sabikani', 30], ['shizukufin', 20], ['hikaritanishi', 20]], lv: [11, 14], waterRows: 15 },
+  forest: { list: [['hinatagaeru', 50], ['shizukufin', 50]], lv: [5, 8] },
+  lake: { list: [['shizukufin', 38], ['hikaritanishi', 32], ['hinatagaeru', 27], ['hinatagama', 3]], lv: [9, 13] },
 };
 const isWater = (m, x, y) => !!FISH[m.id] && y >= 0 && x >= 0 && y < m.h && x < m.w && (m.t[y][x] === '~' || (FISH[m.id].waterRows != null && y >= FISH[m.id].waterRows));
 const world = { map: MAPS.village, p: { x: 6, y: 8, dir: 'd', ox: 0, oy: 0, alt: false, turnT: 0, pending: false }, npcs: [], bang: null, emote: null, fol: { x: 6, y: 8, ox: 0, oy: 0, alt: false } };
@@ -315,6 +322,7 @@ function interact() {
   else if (n) event(async () => { n.dir = OPP[p.dir]; setSpeaker(n.id); await runScript(n.script, n); });
   else if (sg) event(() => say(TEXT[sg]));
   else if (door) event(() => doorScript(door));
+  else if (m.looks[tx + ',' + ty]) event(() => lookScript(m.looks[tx + ',' + ty]));
   else if (isWater(m, tx, ty)) event(() => fishTalk(tx, ty));
   else if (lead && Math.abs(fo.x - p.x) + Math.abs(fo.y - p.y) <= 1) event(() => petFollower(lead)); // すぐそばの子に話しかける
 }
@@ -386,25 +394,25 @@ function drawField() {
   const x0 = Math.max(0, Math.floor(cx / TS) - 1), x1 = Math.min(m.w - 1, Math.floor((cx + VW) / TS) + 1);
   const y0 = Math.max(0, Math.floor(cy / TS) - 1), y1 = Math.min(m.h - 1, Math.floor((cy + H) / TS) + 3);
   const bg = m.bg ? Art.bg(m.bg) : null;
-  g.fillStyle = '#9bd278'; g.fillRect(0, 0, VW, H);
+  g.fillStyle = Art.groundColor(m.theme); g.fillRect(0, 0, VW, H);
   if (bg) g.drawImage(bg, 0, 0, bg.width, bg.height, -cx, -cy, m.w * TS, m.h * TS);
   else { // 地面は一度だけ描いて使い回す。ゆれる草と水だけ、毎回描く
     const cc = mapCache(m), K = m._cacheK, gl = [];
     g.drawImage(cc, cx * K, cy * K, Math.min(VW * K, cc.width - cx * K), Math.min(H * K, cc.height - cy * K), 0, 0, Math.min(VW, cc.width / K - cx), Math.min(H, cc.height / K - cy));
     for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const c = m.t[ty][tx]; if (c === 'g') gl.push({ px: tx * TS - cx, py: ty * TS - cy, h: Art.hash(tx, ty) }); else if (c === '~') Art.tile(g, '~', tx, ty, tx * TS - cx, ty * TS - cy, T, m); }
-    Art.grassBatch(g, gl, T);
+    Art.grassBatch(g, gl, T, m.theme);
   }
   const items = [];
   if (!bg) for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (m.t[ty][tx] === 'T') items.push({ y: (ty + 1) * TS, k: 0, a: tx, b: ty });
   if (!bg) for (const o of m.objects) {
     if (o.type === 'gate') { items.push({ y: (o.y + 2) * TS, k: 1, o, part: 0 }); items.push({ y: (o.y + 6) * TS, k: 1, o, part: 1 }); }
-    else items.push({ y: (o.type === 'house' ? o.y + o.h : o.y + 1) * TS, k: 1, o });
+    else items.push({ y: (o.y + (o.h || 1)) * TS, k: 1, o });
   }
   for (const n of world.npcs) items.push({ y: (n.y + n.oy) * TS + TS - 2, k: 2, n });
   items.push({ y: (p.y + p.oy) * TS + TS - 1, k: 3 });
   if (leadMon()) items.push({ y: (world.fol.y + world.fol.oy) * TS + TS - 2, k: 4 });
   items.sort((a, b) => a.y - b.y);
-  const tree = Art.treeSprite();
+  const tree = Art.treeSprite(m.theme);
   for (const it of items) {
     if (it.k === 0) g.drawImage(tree, it.a * TS - 16 - cx, (it.b + 1) * TS + 4 - 84 - cy);
     else if (it.k === 1) {
@@ -412,6 +420,7 @@ function drawField() {
       if (o.type === 'house') g.drawImage(Art.houseSprite(o), o.x * TS - 8 - cx, o.y * TS - 20 - cy);
       else if (o.type === 'sign') g.drawImage(Art.signSprite(), o.x * TS + 2 - cx, (o.y + 1) * TS - 32 - cy);
       else if (o.type === 'gate') g.drawImage(Art.stoneSprite(), (o.x + 1) * TS - 20 - cx, (o.y + 2 + it.part * 4) * TS + 4 - 72 - cy);
+      else Art.prop(g, o, o.x * TS - cx, o.y * TS - cy, T, o.look && !!S.flags['look_' + o.look]);
     } else if (it.k === 2) {
       const n = it.n, bob = (n.ox || n.oy) ? (n.alt ? 1 : 2) : 0;
       Art.person(g, n.pal, n.pal, n.dir, bob, (n.x + n.ox) * TS + 16 - cx, (n.y + n.oy) * TS + TS - 3 - cy, n.pal === 'child' ? 0.88 : 1);
@@ -426,15 +435,17 @@ function drawField() {
       const bob = (p.ox || p.oy) ? (p.alt ? 1 : 2) : 0, bx = (p.x + p.ox) * TS + 16 - cx, by = (p.y + p.oy) * TS + TS - 3 - cy;
       Art.person(g, 'hero', 'hero', p.dir, bob, bx, by);
       const tx = Math.round(p.x + p.ox + 0.01), ty = Math.round(p.y + p.oy + 0.01);
-      if (!bg && m.t[ty] && m.t[ty][tx] === 'g') Art.tallFront(g, tx * TS - cx, ty * TS - cy, T, Art.hash(tx, ty));
+      if (!bg && m.t[ty] && m.t[ty][tx] === 'g') Art.tallFront(g, tx * TS - cx, ty * TS - cy, T, Art.hash(tx, ty), m.theme);
     }
   }
+  drawSky(m, cx, cy);
   if (bg && m.lamps) { // 街灯のあかり
     if (world.night > 0) drawNight(m, cx, cy, (p.x + p.ox) * TS + 16 - cx, (p.y + p.oy) * TS + TS - cy);
     const lit = S.flags['lit_' + m.id];
     g.save(); g.globalCompositeOperation = 'screen';
     for (let i = 0; i < m.lamps.length; i++) { const k = world.lampK ? world.lampK[i] : lit ? 1 : 0; if (k <= 0) continue; const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy, r = 120 * (0.55 + 0.45 * k) * (1 + Math.sin(clock * 3 + i * 2) * 0.04); g.globalAlpha = Math.min(1, k); const rg = g.createRadialGradient(lx, ly, 2, lx, ly, r); rg.addColorStop(0, 'rgba(255,240,190,1)'); rg.addColorStop(0.2, 'rgba(255,214,140,.7)'); rg.addColorStop(0.55, 'rgba(255,184,110,.28)'); rg.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = rg; g.fillRect(lx - r, ly - r, r * 2, r * 2); }
-    if (world.night > 0) { g.globalCompositeOperation = 'lighter'; for (let i = 0; i < m.lamps.length; i++) { const k = world.lampK ? Math.min(1, world.lampK[i]) : 0; if (k <= 0) continue; const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy + 30, og = g.createRadialGradient(lx, ly, 2, lx, ly, 105); og.addColorStop(0, `rgba(255,150,50,${0.3 * k})`); og.addColorStop(1, 'rgba(255,130,40,0)'); g.globalAlpha = 1; g.fillStyle = og; g.fillRect(lx - 105, ly - 105, 210, 210); } } // 夜は 暖かい色を たす
+    const nk = world.night > 0 ? 0 : skyNight();
+    if (world.night > 0 || (nk > 0.05 && lit)) { g.globalCompositeOperation = 'lighter'; for (let i = 0; i < m.lamps.length; i++) { const k = world.lampK ? Math.min(1, world.lampK[i]) : world.night > 0 ? 0 : nk; if (k <= 0) continue; const L = m.lamps[i], lx = L.x - cx, ly = L.y - cy + 30, og = g.createRadialGradient(lx, ly, 2, lx, ly, 105); og.addColorStop(0, `rgba(255,150,50,${0.3 * k})`); og.addColorStop(1, 'rgba(255,130,40,0)'); g.globalAlpha = 1; g.fillStyle = og; g.fillRect(lx - 105, ly - 105, 210, 210); } } // 夜は 暖かい色を たす
     if (m.id === 'town3') { // 灯台の ひかりが ゆっくり まわる
       const k = Math.min(1, world.lampK ? world.lampK[m.lamps.length - 1] : lit ? 1 : 0);
       if (k > 0) { const L = m.lamps[m.lamps.length - 1], lx = L.x - cx, ly = L.y - cy, a = clock * 0.9; for (const side of [0, Math.PI]) { const d = Math.cos(a + side), len = (d >= 0 ? 1 : -1) * (60 + 520 * Math.abs(d)), tilt = Math.sin(a + side) * 26, bg2 = g.createLinearGradient(lx, ly, lx + len, ly); bg2.addColorStop(0, `rgba(255,230,165,${0.6 * k})`); bg2.addColorStop(1, 'rgba(255,220,150,0)'); g.fillStyle = bg2; g.beginPath(); g.moveTo(lx, ly - 4); g.lineTo(lx + len, ly - 36 + tilt); g.lineTo(lx + len, ly + 40 + tilt); g.lineTo(lx, ly + 6); g.fill(); } }
@@ -446,8 +457,9 @@ function drawField() {
     const sx = s.x * TS + 16 - cx, sy = s.y * TS + 18 - cy, tw = 0.5 + 0.5 * Math.sin(clock * 3.2 + s.x), r = 3.5 + tw * 3.5;
     g.save(); g.globalAlpha = 0.55 + tw * 0.45; Art.star(g, sx, sy - tw * 2, r, '#fff6c0'); g.strokeStyle = 'rgba(255,246,190,.9)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(sx - r * 1.6, sy - tw * 2); g.lineTo(sx + r * 1.6, sy - tw * 2); g.moveTo(sx, sy - tw * 2 - r * 1.6); g.lineTo(sx, sy - tw * 2 + r * 1.6); g.stroke(); g.restore();
   }
-  if (m.fog && gradeLevel >= 1) { // 霧: 灯がともるとうすくなる
-    const fa = m.fog * (S.flags['lit_' + m.id] ? 0.3 : 1) * (1 - (world.night || 0) * 0.85); // 夜の場面では うすく
+  const mf = (m.fog || 0) * (S.flags['lit_' + m.id] ? 0.3 : 1) + (world.night > 0 ? 0 : weatherFog());
+  if (mf > 0 && gradeLevel >= 1) { // 霧: 灯がともるとうすくなる
+    const fa = mf * (1 - (world.night || 0) * 0.85); // 夜の場面では うすく
     g.save(); for (let i = 0; i < (gradeLevel >= 2 ? 6 : 2); i++) { const fx = ((i * 330 + clock * (9 + i * 3)) % (VW + 500)) - 250, fy = 60 + (i * 61) % 300, rr2 = 190 + (i % 3) * 40; const fg = g.createRadialGradient(fx, fy, 10, fx, fy, rr2); fg.addColorStop(0, `rgba(232,238,242,${fa * 0.55})`); fg.addColorStop(1, 'rgba(232,238,242,0)'); g.fillStyle = fg; g.fillRect(fx - rr2, fy - rr2, rr2 * 2, rr2 * 2); }
     g.fillStyle = `rgba(226,233,238,${fa * 0.18})`; g.fillRect(0, 0, VW, H); g.restore();
   }
@@ -472,7 +484,7 @@ function drawField() {
     const k = (clock - world.emote.t0) / 1.5, f = world.fol, ex = (f.x + f.ox) * TS + 16 - cx, ey = (f.y + f.oy) * TS - 22 - cy;
     for (let i = 0; i < 3; i++) { const kk = clamp(k * 1.4 - i * 0.18, 0, 1); if (kk <= 0 || kk >= 1) continue; g.globalAlpha = 1 - kk * kk; heart(ex + (i - 1) * 10 + Math.sin(kk * 6 + i) * 3, ey - kk * 26, 5 + (i === 1 ? 2 : 0), i === 1 ? '#ff7f9f' : '#ffa9bf'); g.globalAlpha = 1; }
   }
-  if (ui.banner) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(VW / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, VW / 2, y + 17, { align: 'center', size: 16 }); } else ui.banner = null; }
+  if (ui.banner && !(ui.skyChip && ui.choice)) { const k = clock - ui.banner.t0; if (k < 2.6) { const y = k < 0.4 ? lerp(-40, 10, ease(k / 0.4)) : k > 2.2 ? lerp(10, -40, ease((k - 2.2) / 0.4)) : 10; const bt2 = ui.banner.text || m.name; g.font = `700 16px ${FONT}`; const bw = Math.max(200, g.measureText(bt2).width + 44); panel(VW / 2 - bw / 2, y, bw, 32, { r: 16, fill: 'rgba(255,250,240,.94)' }); txt(bt2, VW / 2, y + 17, { align: 'center', size: 16 }); if (bt2 === m.name) txt(skyLabel(), VW / 2, y + 46, { align: 'center', size: 12, color: '#fbf6ea', stroke: 'rgba(40,34,56,.82)', sw: 4 }); } else ui.banner = null; }
 }
 
 // ---------- 裏から もどったとき、消えた絵を 描きなおす ----------
@@ -522,8 +534,15 @@ if (/[?&]size/.test(location.search)) {
     box.textContent = `inner ${innerWidth}x${innerHeight}  outer ${outerWidth}x${outerHeight}\nclient ${document.documentElement.clientWidth}x${document.documentElement.clientHeight}  screen ${screen.width}x${screen.height}\nvisual ${v ? Math.round(v.width) + 'x' + Math.round(v.height) + ' top' + Math.round(v.offsetTop) : '-'}\nfixed ${r('fixed')} vh ${r('vh')} lvh ${r('lvh')} svh ${r('svh')} dvh ${r('dvh')}\nsafe top ${r('top')} bottom ${r('bot')}\nstage ${Math.round(st.left)},${Math.round(st.top)} ${Math.round(st.width)}x${Math.round(st.height)}\nstandalone ${navigator.standalone} dpr ${devicePixelRatio}\nfix-log ${(() => { try { return localStorage.getItem('mofu.vlog') || 'none'; } catch (e) { return '?'; } })()}`; };
   setInterval(upd, 500); upd();
 }
+// 場所ごとの 環境音
+const AMB_OF = { village: 'village', route: 'field', town: 'town1', route2: 'wires', town2: 'town2', route3: 'coast', town3: 'harbor', route4: 'mountain', town4: 'dam', forest: 'forest', lake: 'lake', station: 'station', ridge: 'mountain' };
+function updateAmbient() {
+  const on = mode === 'field' && !ui.overlay;
+  Aud.ambient(on ? AMB_OF[world.map.id] : null, on && typeof isNight === 'function' && isNight(), on && typeof isRaining === 'function' && isRaining());
+}
 function tick(dt) {
   clock += dt;
+  if (Math.floor(clock * 3) !== Math.floor((clock - dt) * 3)) updateAmbient();
   if (mode === 'field') { S.time += dt; updateField(dt); const wt = warmth(); warmNow = warmNow == null ? wt : warmNow + (wt - warmNow) * Math.min(1, dt * 0.7); if (Math.floor(clock) !== Math.floor(clock - dt)) Aud.setWarm(warmNow); }
   for (let i = sleepers.length - 1; i >= 0; i--) if (sleepers[i].t <= clock) { const s = sleepers.splice(i, 1)[0]; s.r(); }
   const fw = frameW.splice(0); for (const r of fw) r();
@@ -580,7 +599,7 @@ function render() {
   if (gradeOn && (mode === 'field' || mode === 'battle')) grade();
   g.save(); g.translate(OX, 0);
   if (ui.overlay) ui.overlay();
-  drawDialog(); drawNameTag(); drawChoice();
+  drawDialog(); drawNameTag(); drawChoice(); drawSkyChip();
   g.restore();
   if (ui.flash > 0) { g.fillStyle = `rgba(255,255,255,${ui.flash})`; g.fillRect(0, 0, VW, H); }
   if (ui.wipe > 0) { g.fillStyle = '#1b1722'; const n = 12, bh = H / n; for (let i = 0; i < n; i++) { const w = Math.min(1, ui.wipe * 1.6 - (i % 6) * 0.1) * VW; if (w > 0) g.fillRect(i % 2 ? VW - w : 0, i * bh, w, bh + 1); } }

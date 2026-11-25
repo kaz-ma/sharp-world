@@ -152,7 +152,7 @@ function drawFx() {
 }
 function drawBattle() {
   const b = bt; if (!b) return;
-  battleBG();
+  battleBG(); drawBattleSky();
   if (b.dim > 0.01) { g.fillStyle = `rgba(14,10,30,${b.dim})`; g.fillRect(0, 0, W, H); } // 技の あいだは 背景を 暗く
   if (b.foe) drawMon(b.foe.sp, 462, 168, 122, b.es, 1.3, b.foe.shiny);
   if (b.me) drawMon(b.me.sp, 158, 262, 156, b.ps, 0, b.me.shiny);

@@ -5,11 +5,21 @@ const TEXT = {
   sign_home: 'ここは あなたの いえ。',
   sign_route: 'ひなた草原。\nモンスターが とびだす 草むらに ちゅうい!',
   sign_route4: 'やまなみ道。\nこの さきは 山の町 ヤマノハ。',
+  sign_to_forest: '↑ こもれびの森\n(寄り道。野生の 子は Lv5〜8)', sign_forest: 'こもれびの森。\nおくに 古い 灯ろうが ある。',
+  sign_to_lake: '↓ かがみ池\n(寄り道。野生の 子は Lv8〜11)', sign_lake: 'かがみ池。\n水面に、空が そのまま うつる。',
+  sign_to_station: '↑ ひとつ星駅(いまは つかわれて いない)\n(寄り道。野生の 子は Lv12〜14)', sign_station: 'ひとつ星駅。\n大停電の 夜から、列車は 来ていない。',
+  sign_to_ridge: '↑ 星見の尾根\n(寄り道。野生の 子は Lv16〜18。てごわい)', sign_ridge: '星見の尾根。\n晴れた 夜は、町の あかりが 見える。',
   sign_route3: 'しおかぜ街道。\n霧が こい日は、足もとに ちゅうい。',
   sign_route2: 'でんせん街道。\n電線の うえの 鳥に ちゅうい!',
   sign_gate: 'この さきは 大きな 町へ つづく ゲート。\n(つづきは また こんど…)',
 };
 const TRAINERS = {
+  woodsman: { name: 'ゲン', team: [['kinokokko', 8], ['pukurisu', 8]], reward: 220,
+    intro: ['この 森は、わしの 庭みたいな もんだ。', '通るなら、うでを 見せて いきな!'], talk: 'もう いっちょ、やるか?',
+    win: ['こりゃ まいった。いい 目をした 子たちだ。'], outro: ['おくの 灯ろうは、もう ずっと 消えたままでな。', '火を もつ 子が いれば、また ともせるかも しれん。'], after: '灯ろうは、北東の ひらけた 所に あるぞ。' },
+  stargazer: { name: 'ホシノ', title: '星読み', team: [['kirikamome', 17], ['hanedoron', 18], ['fukufukurisu', 18]], reward: 700,
+    intro: ['しずかに。いま、星を よんでいる ところ。', '……きみの 旅は、おもしろい 星まわりね。ためして いい?'], talk: 'もう いちど、星まわりを ためす?',
+    win: ['やっぱり。きみの 星は、よく ひかってる。'], outro: ['てっぺんの 石づみから、町の あかりが 見えるわ。'], after: '夜に のぼると、もっと きれいよ。' },
   rival: { name: 'ミナト', title: 'ひなた草原で しゅぎょう中の ぼうけんしゃ', cut: true, team: [['pukurisu', 5], ['hinatagaeru', 5]], reward: 300,
     intro: ['おっ、きみも ぼうけんしゃ だね?', 'ぼくは ミナト! ひなた草原で しゅぎょう中なんだ。', 'めが あったら しょうぶ! いくよ!'], talk: 'おっ、しょうぶ したいの? いいよ!',
     win: ['うわあ、まけたー! きみ、つよいね!', 'でも たのしかった! これ、あげるよ。'], gift: { ball: 3, potion: 2, text: 'あつめボールを 3こ、きずぐすりを 2こ もらった!' },
@@ -48,11 +58,13 @@ async function collectSpot(s, key) {
   await say(t); save();
 }
 async function healScene() {
-  await fade(1, 0.4); Aud.sfx('heal'); await sleep(0.9); healAll(); for (const m of S.party) addBond(m, 1); await fade(0, 0.4);
+  let sleepIn = false;
+  if (isNight()) { const c = await choose(['朝まで ねむる', 'すこしだけ やすむ'], { x: 420, y: 150, w: 200, title: 'そとは もう 夜だ', cancel: 1 }); sleepIn = c === 0; }
+  await fade(1, 0.4); Aud.sfx('heal'); await sleep(0.9); healAll(); for (const m of S.party) addBond(m, 1); if (sleepIn) skipToMorning(); await fade(0, 0.4);
 }
 async function whiteout() {
   await say('めのまえが まっくらに なった…'); await fade(1, 0.5);
-  const mt = S.flags.ch_town4 && (world.map.id === 'town4' || world.map.id === 'route4'); // 山では 山の 診療所へ
+  const mt = S.flags.ch_town4 && ['town4', 'route4', 'ridge'].includes(world.map.id); // 山では 山の 診療所へ
   if (mt) enterMap('town4', 5, 11, 'd', true); else enterMap('village', 6, 8, 'd', true); healAll(); await sleep(0.4); await fade(0, 0.5);
   await say(mt ? '山の 診療所で めを さました。\nみんな げんきに なったよ。' : 'ひなた村の いえで めを さました。\nみんな げんきに なったよ。');
 }
@@ -65,7 +77,7 @@ async function afterBattle(r) {
 async function wildEncounter() {
   const m = world.map; Aud.sfx('encounter'); Aud.bgm(null);
   await flashFx(2); await wipe(0.55);
-  const table = [...m.grass, ...(m.grassLit || []).filter(([f]) => S.flags[f]).flatMap(([, l]) => l)];
+  const table = [...m.grass, ...(m.grassLit || []).filter(([f]) => S.flags[f]).flatMap(([, l]) => l), ...skyGrass()];
   let r = Math.random() * table.reduce((s, x) => s + x[1], 0), sp = table[0][0];
   for (const [id, w] of table) { r -= w; if (r <= 0) { sp = id; break; } }
   const foe = mkMon(sp, rint(m.lv[0], m.lv[1])); if (Math.random() < 0.02) foe.shiny = true;
@@ -183,7 +195,7 @@ async function fishTalk(tx, ty) {
 }
 async function goFishing(tx, ty) {
   const p = world.p, t = FISH[world.map.id]; world.fishing = { tx, ty, state: 'wait' }; Aud.sfx('throw'); flushBtn();
-  const waitT = rnd(1.4, 4.4), t0 = clock; let early = false;
+  const waitT = rnd(1.4, 4.4) * (isRaining() ? 0.6 : 1), t0 = clock; let early = false;
   while (clock - t0 < waitT) { await nextFrame(); if (btnQ.length) { btnQ.length = 0; early = true; break; } }
   if (early) { world.fishing = null; await say('はやく ひきすぎた…。\nさかなが にげてしまった。'); return; }
   world.fishing.state = 'bite'; Aud.sfx('shake'); flushBtn();
@@ -266,7 +278,9 @@ async function runScript(id, n) {
       await sayAll(['灯守りの しごと、思ったより いそがしいんだ。', '…でも、たのしいよ。\nきみの 旅の 話、また きかせて。']); break;
     case 'clerk':
       await say(S.flags.beat_rival ? 'おみせ、あけたよ! ドアから はいってね。' : 'ごめんね、おみせは まだ じゅんびちゅうなんだ。\nもうすこし まっててくれる?'); break;
-    case 'rival': case 'camper': case 'techie': case 'farmhand': case 'nana': case 'sailor': case 'goro': case 'hiker': {
+    case 'painter': await painterTalk(); break;
+    case 'stationman': await stationTalk(); break;
+    case 'rival': case 'camper': case 'techie': case 'farmhand': case 'nana': case 'sailor': case 'goro': case 'hiker': case 'woodsman': case 'stargazer': {
       const T = TRAINERS[n.id];
       if (S.flags['beat_' + n.id]) await say(T.after);
       else { await say(T.talk || 'しょうぶだ!'); await trainerBattle(n); }
@@ -386,7 +400,8 @@ async function resetGame() {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
   ui.dialog = null; location.reload();
 }
-async function openMenu() {
+async function openMenu() { ui.skyChip = true; try { await menuLoop(); } finally { ui.skyChip = false; } }
+async function menuLoop() {
   Aud.sfx('ok');
   for (;;) {
     const items = ['めやす', 'ずかん', 'なかま', { label: 'ボックス', sub: S.box.length ? `${S.box.length}ひき` : '' }, 'バッグ', 'セーブ', 'せってい', 'とじる'];
@@ -607,7 +622,7 @@ if (/[?&]debug/.test(location.search) && /^(localhost|127\.|\[::1\])/.test(locat
   window.__m = {
     get S() { return S; }, world, get bt() { return bt; }, get mode() { return mode; }, get busy() { return busy; }, ui, tick, press: pushBtn, mkMon,
     async advance(sec) { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) { tick(1 / 60); for (let j = 0; j < 12; j++) await null; } },
-    grade(v) { gradeOn = v; }, warm(v) { warmDbg = v; },
+    grade(v) { gradeOn = v; }, warm(v) { warmDbg = v; }, sky(t, w) { skyDbg = t; wxDbg = w || null; },
     grid(v) { showGrid = v; },
     openingScene, Aud, cutin, setSpeaker, say, event, lightTown, boxMenu, addBond, bondLv, petFollower, goalInfo, questTalk, goFishing, learnMove, evolveCheck, movesOf, relearnable,
     hold(d) { dirStack.length = 0; if (d) dirStack.push(d); },

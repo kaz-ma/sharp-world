@@ -190,6 +190,47 @@ const Aud = (() => {
     musicbox(ch[[0, 1, 2, 3, 2, 3, 1, 2][s]] + 12, t, 0.035);
     const m = [72, 0, 76, 0, 81, 0, 79, 0, 79, 0, 74, 0, 71, 0, 74, 0, 76, 0, 79, 0, 83, 0, 79, 0, 81, 0, 0, 0, 76, 0, 0, 0][i]; if (m) synth(m, t, 0.035, dt * 2.4, 2600);
   } };
+  // ---------- 町と 寄り道の 曲(どれも オリジナル)。あかりが ともると、楽器が ふえて あたたかく なる ----------
+  let litForce = null; // 聴き比べページ用
+  const isLit = () => (litForce != null ? litForce : typeof world !== 'undefined' && (world.map.id === 'village' ? warm > 0.5 : !!S.flags['lit_' + world.map.id]));
+  const hat = (t, v = 0.016) => wash(t, 0.04, v, 7000, 12000, 0.002);
+  const snare = (t, v = 0.05) => wash(t, 0.12, v, 1500, 6000, 0.003);
+  const pad = (notes, t, d, v = 0.018, lp = 1300) => notes.forEach((n) => voice(mtof(n), t, { type: 'sawtooth', vol: v, d, a: d * 0.3, lp }));
+  const bass = (n, t, d, v = 0.13) => voice(mtof(n), t, { type: 'triangle', vol: v, d, a: 0.012 });
+  const mallet = (n, t, v = 0.09) => { voice(mtof(n), t, { vol: v, d: 0.34, a: 0.003 }); voice(mtof(n) * 3.98, t, { vol: v * 0.16, d: 0.08, a: 0.002 }); };
+  const bell = (n, t, v = 0.05) => { voice(mtof(n), t, { vol: v, d: 2.8, a: 0.004, echo: true }); voice(mtof(n) * 2.76, t, { vol: v * 0.2, d: 0.9, a: 0.003 }); };
+  // ひなた村: オルゴールの 三拍子
+  const V_MEL = [76, 0, 79, 0, 84, 0, 83, 0, 81, 0, 76, 0, 77, 0, 81, 0, 84, 0, 83, 0, 0, 0, 79, 0, 76, 0, 79, 0, 88, 0, 86, 0, 83, 0, 79, 0, 81, 0, 84, 0, 83, 0, 84, 0, 0, 0, 0, 0];
+  const V_CH = [[48, 60, 64, 67], [45, 60, 64, 69], [41, 60, 65, 69], [43, 59, 62, 67], [48, 60, 64, 67], [52, 59, 64, 67], [41, 60, 65, 69], [48, 60, 64, 67]];
+  SONGS.village = { bpm: 112, len: 48, play: (i, t, dt) => { const bar = Math.floor(i / 6), s = i % 6, c = V_CH[bar]; if (V_MEL[i]) musicbox(V_MEL[i], t, 0.075); if (s === 0) bass(c[0], t, dt * 4, 0.11); if (s === 2 || s === 4) [c[1], c[2]].forEach((n) => piano(n, t, 0.028, 0.9)); if (isLit() && s === 0) pad([c[1], c[3]], t, dt * 6.4, 0.012); } };
+  // ひだまり町: 夕方の エレピと やわらかい 旋律
+  const H_MEL = [71, 0, 74, 0, 79, 0, 78, 74, 76, 0, 0, 0, 71, 0, 74, 0, 76, 0, 79, 0, 83, 0, 81, 79, 81, 0, 0, 0, 78, 0, 0, 0, 74, 0, 78, 0, 83, 0, 81, 78, 79, 0, 0, 76, 0, 0, 71, 0, 72, 0, 76, 0, 81, 0, 79, 76, 78, 0, 0, 0, 0, 0, 74, 0];
+  const H_CH = [[43, 59, 62, 66], [40, 59, 62, 67], [48, 59, 64, 67], [50, 57, 62, 66], [47, 57, 62, 66], [40, 59, 62, 67], [45, 57, 60, 64], [50, 57, 60, 66]];
+  SONGS.town1 = { bpm: 88, len: 64, play: (i, t, dt) => { const bar = Math.floor(i / 8), s = i % 8, c = H_CH[bar], on = isLit(); if (H_MEL[i]) voice(mtof(H_MEL[i]), t, { type: 'triangle', vol: 0.085, d: dt * 2.6, a: 0.02, vib: true, echo: on }); if (s === 0) c.slice(1).forEach((n) => piano(n, t, 0.04, dt * 6)); if (s === 3) c.slice(2).forEach((n) => piano(n, t, 0.022, dt * 3)); if (s === 0) bass(c[0], t, dt * 3.6); if (s === 5) bass(c[0] + 7, t, dt * 2, 0.08); if (on) { if (s === 0 || s === 4) kick(t, 0.13); if (s === 2 || s === 6) snare(t, 0.035); hat(t, s % 2 ? 0.014 : 0.008); } } };
+  // ミドリ団地: 電子の つぶと、遠い 呼び声
+  const M_MEL = [0, 0, 0, 0, 71, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 0, 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 0, 68, 0, 0, 0, 76, 0, 0, 0, 79, 0, 76, 0, 72, 0, 0, 0, 76, 0, 77, 0, 74, 0, 0, 0, 77, 0, 81, 0, 80, 0, 0, 0, 76, 0, 0, 0];
+  const M_CH = [[45, 57, 60, 64, 71], [41, 53, 57, 60, 64], [38, 50, 53, 57, 60], [40, 52, 56, 59, 62]];
+  SONGS.town2 = { bpm: 96, len: 64, play: (i, t, dt) => { const c = M_CH[Math.floor(i / 8) % 4], s = i % 8, on = isLit(); voice(mtof(c[[1, 2, 3, 4, 3, 2, 4, 3][s]] + 12), t, { type: 'triangle', vol: on ? 0.05 : 0.034, d: 0.2, echo: true }); if (s === 0) { pad([c[1], c[3]], t, dt * 8.4, 0.016, on ? 1500 : 700); voice(mtof(c[0] - 12), t, { vol: 0.15, d: dt * 6 }); } if (M_MEL[i]) voice(mtof(M_MEL[i]), t, { type: 'square', vol: 0.03, d: dt * 3, a: 0.04, lp: 2600, vib: true, echo: true }); if (on) { if (s === 0 || s === 4) kick(t, 0.15); if (s % 2) hat(t, 0.018); if (s === 6) snare(t, 0.025); } } };
+  // ナギサ港: ゆれる 波の ような ピアノ
+  const N_MEL = [69, 0, 0, 74, 0, 0, 77, 0, 74, 0, 0, 0, 72, 0, 0, 77, 0, 0, 76, 0, 72, 0, 0, 0, 69, 0, 0, 74, 0, 77, 82, 0, 0, 81, 0, 0, 79, 0, 77, 74, 0, 0, 73, 0, 0, 0, 0, 0];
+  const N_CH = [[50, 57, 62, 65], [46, 53, 58, 62], [41, 48, 53, 57], [48, 55, 60, 64], [50, 57, 62, 65], [46, 53, 58, 62], [43, 50, 55, 58], [45, 52, 57, 61]];
+  SONGS.town3 = { bpm: 92, len: 48, play: (i, t, dt) => { const bar = Math.floor(i / 6), s = i % 6, c = N_CH[bar], on = isLit(); piano(c[[0, 1, 2, 3, 2, 1][s]], t, s === 0 ? 0.075 : 0.038, 1.5); if (N_MEL[i]) piano(N_MEL[i], t, 0.095, 2.2); if (!on && i === 24) voice(mtof(38), t, { type: 'sawtooth', vol: 0.035, d: dt * 9, a: dt * 3, lp: 420 }); if (on && s === 0) { pad([c[1] + 12, c[3]], t, dt * 6.4, 0.016); bass(c[0] - 12, t, dt * 5, 0.09); } if (on && i % 12 === 9) bell(c[2] + 24, t, 0.03); } };
+  // ヤマノハ: こと・ふうりん・山の ひびき
+  const Y_MEL = [74, 0, 0, 0, 77, 0, 79, 0, 81, 0, 0, 0, 79, 0, 77, 0, 74, 0, 0, 77, 0, 0, 72, 0, 74, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 84, 0, 0, 81, 0, 79, 0, 77, 0, 79, 0, 0, 0, 77, 0, 0, 74, 0, 72, 0, 0, 74, 0, 0, 0, 0, 0, 0, 0];
+  const Y_CH = [[38, 57, 62, 65], [36, 55, 60, 64], [34, 53, 58, 62], [33, 52, 57, 60]];
+  SONGS.town4 = { bpm: 78, len: 64, play: (i, t, dt) => { const c = Y_CH[Math.floor(i / 16)], s = i % 16, on = isLit(); if (Y_MEL[i]) koto(Y_MEL[i], t, 0.085); if (s === 0) { koto(c[0] + 12, t, 0.075); pad([c[1] - 12, c[2] - 12], t, dt * 16.5, on ? 0.018 : 0.011, 800); } if (s === 6 || s === 10) koto(c[s === 6 ? 2 : 1], t, 0.032); if (i === 28 || i === 60) furin(t, 0.028); if (on) { if (s === 0 || s === 8) taiko(t, 0.11); if (s % 4 === 2) musicbox(c[(s >> 2) % 3 + 1] + 12, t, 0.03); } } };
+  // こもれびの森: 木の 打楽器と 鳥の ような 笛
+  const F_ARP = [65, 69, 72, 77, 72, 69, 74, 72, 62, 65, 69, 74, 69, 65, 70, 69, 58, 62, 65, 70, 65, 62, 69, 65, 60, 64, 67, 72, 67, 64, 70, 67];
+  const F_MEL = [0, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 79, 0, 0, 0, 0, 0, 0, 0, 0, 77, 0, 74, 0, 79, 0, 0, 0, 0, 0, 0, 0];
+  SONGS.forest = { bpm: 100, len: 32, play: (i, t, dt) => { mallet(F_ARP[i], t, i % 2 ? 0.045 : 0.07); if (i % 8 === 0) bass([41, 38, 34, 36][i / 8], t, dt * 6, 0.11); if (F_MEL[i]) voice(mtof(F_MEL[i]), t, { vol: 0.055, d: dt * 3.4, a: 0.09, vib: true, echo: true }); if (i % 8 === 4) hat(t, 0.012); } };
+  // かがみ池: まばらな オルゴールと 水の 粒
+  const L_MEL = [83, 0, 0, 0, 0, 0, 79, 0, 0, 0, 74, 0, 0, 0, 0, 0, 81, 0, 0, 0, 0, 0, 78, 0, 0, 0, 71, 0, 0, 0, 0, 0];
+  SONGS.lake = { bpm: 64, len: 32, play: (i, t, dt) => { if (L_MEL[i]) musicbox(L_MEL[i], t, 0.075); if (i % 16 === 0) pad(i ? [50, 57, 62, 66] : [52, 55, 62, 67], t, dt * 17, 0.016, 900); if (i % 8 === 0) bass([40, 47, 38, 45][i / 8], t, dt * 6, 0.07); if (i % 7 === 4) voice(1500 + (i * 233) % 900, t + dt * 0.5, { f2: 2900, ft: 0.05, d: 0.1, vol: 0.016, echo: true }); } };
+  // ひとつ星駅: ひとりの ピアノと、遠い レールの 音
+  const S_MEL = [69, 0, 0, 0, 72, 0, 71, 0, 0, 0, 64, 0, 0, 0, 0, 0, 67, 0, 0, 0, 71, 0, 69, 0, 0, 0, 62, 0, 0, 0, 0, 0, 65, 0, 0, 0, 69, 0, 67, 0, 0, 0, 60, 0, 0, 0, 0, 0, 64, 0, 0, 0, 68, 0, 71, 0, 76, 0, 0, 0, 0, 0, 0, 0];
+  SONGS.station = { bpm: 68, len: 64, play: (i, t, dt) => { const bar = Math.floor(i / 16), s = i % 16; if (S_MEL[i]) piano(S_MEL[i], t, 0.1, 2.6); if (s === 0) { piano([45, 43, 41, 40][bar], t, 0.07, 3.4); piano([52, 50, 48, 47][bar], t + dt * 0.5, 0.04, 3); } if (s === 8) piano([57, 55, 53, 56][bar], t, 0.032, 2.4); if (s === 12 || s === 13) { wash(t, 0.05, 0.028, 1800, 4200, 0.002); wash(t + dt * 0.35, 0.05, 0.02, 1500, 3600, 0.002); } } };
+  // 星見の尾根: ひろい 空と 鐘
+  SONGS.ridge = { bpm: 60, len: 32, play: (i, t, dt) => { const bar = Math.floor(i / 8), ch = [[50, 57, 62, 66, 73], [47, 54, 59, 62, 69], [43, 50, 55, 59, 66], [45, 52, 57, 61, 64]][bar], s = i % 8; if (s === 0) { pad(ch.slice(0, 4), t, dt * 9.5, 0.017, 1100); voice(mtof(ch[0] - 12), t, { vol: 0.09, d: dt * 8, a: dt }); } if (s === 2) bell(ch[4] + 12, t, 0.04); if (s === 5 && bar % 2) bell(ch[3] + 12, t, 0.028); if (i % 11 === 6) voice(2600 + (i * 97) % 600, t, { vol: 0.012, d: 0.5, a: 0.01, echo: true }); } };
   // モンスターの 鳴き声(どれも その場で 合成)。進化後は 低く 長く。down: たおれる とき
   const CRY = {
     mikanya: (t, p, l) => { voice(620 * p, t, { type: 'triangle', f2: 920 * p, ft: 0.11 * l, d: 0.13 * l, vol: 0.12 }); voice(940 * p, t + 0.12 * l, { type: 'triangle', f2: 520 * p, d: 0.32 * l, vol: 0.13, vib: true }); },
@@ -210,9 +251,78 @@ const Aud = (() => {
     const base = SPECIES[id].from, f = CRY[id] || CRY[base]; if (!f) return;
     try { f(ctx.currentTime + 0.01, (base ? 0.76 : 1) * (down ? 0.62 : 1), (base ? 1.3 : 1) * (down ? 1.5 : 1)); } catch (e) {}
   }
+  // ---------- 環境音: 流れつづける 音(風・波・雨)と、ときどき 聞こえる 音(鳥・虫・かもめ など) ----------
+  const R = (a, b) => a + Math.random() * (b - a);
+  // bed: [下を けずる, 上を けずる, 大きさ, ゆれの 速さ, ゆれの 深さ]
+  const BED = {
+    breeze: [60, 520, 0.045, 0.11, 0.6], wind: [90, 760, 0.06, 0.08, 0.75], leaves: [1800, 6200, 0.014, 0.27, 0.7], waves: [40, 620, 0.12, 0.105, 0.9], lap: [160, 1100, 0.035, 0.34, 0.85], dam: [220, 1500, 0.022, 0.5, 0.15], rain: [900, 7000, 0.06, 0.21, 0.15], hum: [30, 140, 0.05, 0.9, 0.2],
+  };
+  const EV = {
+    bird: (t) => { const f = R(2200, 3400), n = 2 + (Math.random() * 3 | 0); for (let i = 0; i < n; i++) voice(f * R(0.94, 1.08), t + i * 0.11, { f2: f * R(1.15, 1.45), ft: 0.05, d: 0.07, vol: 0.022 }); },
+    warbler: (t) => { voice(1500, t, { d: 0.5, vol: 0.014, a: 0.2 }); [2100, 2700, 2350].forEach((f, i) => voice(f, t + 0.55 + i * 0.12, { f2: f * 1.1, d: 0.1, vol: 0.022, echo: true })); },
+    peck: (t) => { for (let i = 0; i < 7; i++) wash(t + i * 0.055, 0.025, 0.045, 700, 2600, 0.002); },
+    cricket: (t) => { const f = R(4100, 4700); for (let j = 0; j < 3; j++) for (let i = 0; i < 4; i++) voice(f, t + j * 0.26 + i * 0.035, { d: 0.028, vol: 0.011, a: 0.004 }); },
+    bell_bug: (t) => { for (let i = 0; i < 14; i++) voice(3300 + (i % 2) * 40, t + i * 0.05, { d: 0.04, vol: 0.007, a: 0.006 }); },
+    frog: (t) => { const f = R(150, 240); for (let j = 0; j < 2; j++) for (let i = 0; i < 6; i++) voice(f - i * 4, t + j * 0.3 + i * 0.024, { type: 'sawtooth', d: 0.03, vol: 0.036, lp: 1100 }); },
+    owl: (t) => { [0, 0.45].forEach((a, i) => voice(i ? 330 : 370, t + a, { f2: i ? 300 : 345, d: i ? 0.7 : 0.28, vol: 0.04, a: 0.08, echo: true })); },
+    gull: (t) => { for (let i = 0; i < 2 + (Math.random() * 2 | 0); i++) voice(R(1050, 1250), t + i * 0.34, { type: 'sawtooth', f2: R(680, 780), d: 0.26, vol: 0.016, lp: 2600, vib: true, echo: true }); },
+    horn: (t) => { [98, 98.8, 147].forEach((f) => voice(f, t, { type: 'sawtooth', d: 2.6, a: 0.5, vol: 0.022, lp: 420, echo: true })); },
+    drone: (t) => { for (let i = 0; i < 3; i++) voice(R(180, 230), t + i * 0.18, { type: 'sawtooth', f2: R(250, 330), d: 0.5, a: 0.2, vol: 0.012, lp: 1400 }); },
+    spark: (t) => { for (let i = 0; i < 4; i++) wash(t + i * R(0.02, 0.06), 0.015, 0.03, 4000, 11000, 0.001); },
+    drip: (t) => { const f = R(900, 1900); voice(f, t, { f2: f * 1.9, ft: 0.05, d: 0.08, vol: 0.02, echo: true }); },
+    farbell: (t) => { [392, 784, 1176].forEach((f, i) => voice(f * R(0.998, 1.002), t, { vol: 0.016 / (i + 1), d: 3.2, a: 0.006, echo: true })); },
+    crossing: (t) => { for (let i = 0; i < 6; i++) voice(i % 2 ? 700 : 750, t + i * 0.34, { type: 'triangle', d: 0.2, vol: 0.011, lp: 1600, echo: true }); },
+    creak: (t) => { voice(R(240, 330), t, { type: 'sawtooth', f2: R(170, 220), d: 0.5, a: 0.15, vol: 0.011, lp: 900 }); },
+    hawk: (t) => { voice(2300, t, { type: 'triangle', f2: 1500, d: 0.7, a: 0.06, vol: 0.016, echo: true }); },
+    thunder: (t) => { wash(t, 2.6, 0.09, 30, 240, 0.5); wash(t + 0.7, 2.2, 0.06, 30, 180, 0.4); },
+  };
+  // 場所: [流れる音, 昼の音, 夜の音, 間かく(秒)]
+  const AMB = {
+    village: [['breeze'], ['bird', 'bird', 'warbler'], ['cricket', 'cricket', 'bell_bug'], [2.5, 7]],
+    field: [['breeze', 'leaves'], ['bird', 'bird', 'cricket'], ['cricket', 'bell_bug'], [2, 6]],
+    town1: [['breeze'], ['bird', 'farbell'], ['cricket', 'bell_bug'], [5, 12]],
+    wires: [['breeze', 'hum'], ['bird', 'spark'], ['cricket', 'spark'], [3, 8]],
+    town2: [['hum', 'breeze'], ['drone', 'spark', 'drone'], ['drone', 'cricket'], [4, 10]],
+    coast: [['waves', 'breeze'], ['gull'], ['bell_bug', 'cricket'], [4, 10]],
+    harbor: [['waves'], ['gull', 'gull', 'horn'], ['horn', 'drip'], [5, 12]],
+    mountain: [['wind'], ['hawk', 'bird'], ['owl', 'bell_bug'], [5, 13]],
+    dam: [['wind', 'dam'], ['hawk', 'farbell'], ['owl', 'farbell'], [6, 14]],
+    forest: [['leaves', 'breeze'], ['bird', 'warbler', 'bird', 'peck'], ['owl', 'cricket'], [1.8, 5]],
+    lake: [['lap', 'breeze'], ['bird', 'frog', 'drip'], ['frog', 'frog', 'cricket'], [2.5, 6]],
+    station: [['breeze'], ['creak', 'bird', 'crossing'], ['crossing', 'cricket'], [5, 12]],
+  };
+  let ambKey = null, ambNodes = [], ambDef = null, ambNight = false, ambRain = false, ambAt = 0, ambTimer = null, longBuf = null;
+  function startBed(name) {
+    const [hp, lp, vol, rate, depth] = BED[name], t = ctx.currentTime;
+    if (!longBuf) { longBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 4), ctx.sampleRate); const d = longBuf.getChannelData(0); let b = 0; for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; b = b * 0.6 + w * 0.4; d[i] = w * 0.5 + b * 0.8; } }
+    const s = ctx.createBufferSource(), h = ctx.createBiquadFilter(), l = ctx.createBiquadFilter(), sw = ctx.createGain(), fadeG = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+    s.buffer = longBuf; s.loop = true; h.type = 'highpass'; h.frequency.value = hp; l.type = 'lowpass'; l.frequency.value = lp;
+    sw.gain.value = 1 - depth * 0.5; lfo.frequency.value = rate * R(0.9, 1.1); lg.gain.value = depth * 0.5; lfo.connect(lg); lg.connect(sw.gain);
+    fadeG.gain.setValueAtTime(0.0001, t); fadeG.gain.exponentialRampToValueAtTime(vol, t + 1.4);
+    s.connect(h); h.connect(l); l.connect(sw); sw.connect(fadeG); fadeG.connect(master); s.start(t, Math.random() * 3); lfo.start(t);
+    return { s, lfo, fadeG, vol };
+  }
+  function ambTick() {
+    if (!ctx || !ambDef || muted || ctx.state !== 'running' || ctx.currentTime < ambAt) return;
+    const list = ambRain ? ['drip', 'drip', 'drip', 'thunder'] : ambNight ? ambDef[2] : ambDef[1], name = list[Math.random() * list.length | 0];
+    if (name !== 'thunder' || Math.random() < 0.3) { try { EV[name](ctx.currentTime + 0.05); } catch (e) {} }
+    ambAt = ctx.currentTime + R(ambDef[3][0], ambDef[3][1]) * (ambRain ? 0.5 : 1);
+  }
+  // place: AMB の名前(null で 止める)
+  function ambient(place, night = false, rain = false) {
+    const key = place && AMB[place] ? `${place}|${night ? 1 : 0}|${rain ? 1 : 0}` : null;
+    if (key === ambKey || (key && !ctx)) return;
+    ambKey = key; if (!ctx) return;
+    const t = ctx.currentTime;
+    for (const n of ambNodes) { try { n.fadeG.gain.cancelScheduledValues(t); n.fadeG.gain.setValueAtTime(n.vol, t); n.fadeG.gain.exponentialRampToValueAtTime(0.0001, t + 0.7); n.s.stop(t + 0.8); n.lfo.stop(t + 0.8); } catch (e) {} }
+    ambNodes = []; ambDef = key ? AMB[place] : null; ambNight = night; ambRain = rain;
+    if (!ambDef) return;
+    ambNodes = [...ambDef[0], ...(rain ? ['rain'] : [])].map(startBed); ambAt = t + R(0.8, 2.5);
+    if (!ambTimer) ambTimer = setInterval(ambTick, 250);
+  }
   function sched() {
     if (!ctx || !cur || muted) return;
-    const s = SONGS[cur], dt = 60 / s.bpm / 2;
+    const s = SONGS[cur] || SONGS.field, dt = 60 / s.bpm / 2;
     while (nextT < ctx.currentTime + 0.25) {
       if (s.play) { s.play(step % s.len, nextT, dt); nextT += dt; step++; continue; }
       const i = step % s.mel.length;
@@ -240,5 +350,5 @@ const Aud = (() => {
     try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
   }
   function setMute(m) { muted = m; try { localStorage.setItem('mofu.mute', m ? '1' : '0'); } catch (e) {} if (master) master.gain.value = m ? 0 : 0.5; if (!m) { ensure(); if (ctx) nextT = ctx.currentTime + 0.05; } }
-  return { sfx, cry, bgm, start, stop, unlock, setTheme, get theme() { return themeKey; }, get state() { return ctx ? ctx.state : 'none'; }, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
+  return { sfx, cry, bgm, ambient, start, stop, unlock, setTheme, setLit: (v) => { litForce = v; }, get theme() { return themeKey; }, get state() { return ctx ? ctx.state : 'none'; }, setMute, setWarm: (w) => { warm = w; }, get muted() { return muted; }, ensure };
 })();

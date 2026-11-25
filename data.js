@@ -149,7 +149,7 @@ function buildVillage() {
   for (let i = 0; i < 40; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
   rect(t, 24, 12, 4, 3, 'f');
   return {
-    id: 'village', name: 'ひなた村', w, h, t, bgm: 'field', grass: null,
+    id: 'village', name: 'ひなた村', w, h, t, bgm: 'village', grass: null,
     objects: [
       { type: 'house', x: 5, y: 4, w: 3, h: 3, color: '#ff9a7a', name: '自分の家', door: 'home' },
       { type: 'house', x: 21, y: 4, w: 4, h: 3, color: '#7ac7c4', name: 'ふわふわ休憩所', door: 'rest' },
@@ -175,6 +175,7 @@ function buildRoute() {
   rect(t, 42, 10, 5, 3, '~'); rect(t, 17, 5, 1, 1, 'T'); rect(t, 29, 11, 1, 1, 'T');
   for (let i = 0; i < 60; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
   rect(t, 47, 7, 2, 2, ',');
+  sidePath(t, 28, 0, 6);
   return {
     id: 'route', name: 'ひなた草原', w, h, t, bgm: 'field',
     grass: [['pukurisu', 30], ['hinatagaeru', 20], ['hotaruusagi', 14], ['kinokokko', 20], ['shizukufin', 16]], lv: [3, 5], grassLit: [['lit_town', [['birisuzume', 10]]], ['lit_town2', [['hanedoron', 8]]]],
@@ -182,13 +183,14 @@ function buildRoute() {
       { type: 'sign', x: 3, y: 6, text: 'sign_route' },
       { type: 'gate', x: 48, y: 5, w: 2, h: 6 },
       { type: 'sign', x: 45, y: 6, text: 'sign_gate' },
+      { type: 'sign', x: 30, y: 6, text: 'sign_to_forest' },
     ],
     npcs: [
       { id: 'traveler', x: 17, y: 7, dir: 'd', pal: 'traveler', script: 'traveler' },
       { id: 'camper', x: 23, y: 8, dir: 'l', pal: 'camper', script: 'camper', trainer: true, sight: 4 },
       { id: 'rival', x: 36, y: 8, dir: 'l', pal: 'rival', script: 'rival', trainer: true, sight: 4 },
     ],
-    warps: [{ x: 0, y: 7, to: 'village', tx: 28, ty: 8, dir: 'l' }, { x: 0, y: 8, to: 'village', tx: 28, ty: 9, dir: 'l' }, { x: 49, y: 7, to: 'town', tx: 1, ty: 12, dir: 'r', needs: 'beat_rival' }, { x: 49, y: 8, to: 'town', tx: 1, ty: 13, dir: 'r', needs: 'beat_rival' }],
+    warps: [{ x: 0, y: 7, to: 'village', tx: 28, ty: 8, dir: 'l' }, { x: 0, y: 8, to: 'village', tx: 28, ty: 9, dir: 'l' }, { x: 49, y: 7, to: 'town', tx: 1, ty: 12, dir: 'r', needs: 'beat_rival' }, { x: 49, y: 8, to: 'town', tx: 1, ty: 13, dir: 'r', needs: 'beat_rival' }, { x: 28, y: 0, to: 'forest', tx: 16, ty: 20, dir: 'u' }, { x: 29, y: 0, to: 'forest', tx: 17, ty: 20, dir: 'u' }],
   };
 }
 
@@ -205,7 +207,7 @@ function buildTown() {
   for (const x of [3, 12, 22, 32]) rect(t, x, 7, 1, 5, '#'); // 電柱(上から 下まで)
   blockLamps(t, 'town'); openRoad(t, w);
   return {
-    id: 'town', name: 'ひだまり町', w, h, t, bg: 'town1', bgm: 'town', btheme: 'dusk', grass: null,
+    id: 'town', name: 'ひだまり町', w, h, t, bg: 'town1', bgm: 'town1', btheme: 'dusk', grass: null,
     lamps: [90, 330, 700, 980, 1190].map((x) => ({ x: x + 2, y: 298 })),
     objects: [
       { type: 'door', x: 6, y: 10, door: 'house' }, { type: 'door', x: 16, y: 10, door: 'shop' },
@@ -230,12 +232,13 @@ function buildRoute2() {
   for (const [x, y, ww, hh] of [[4, 3, 9, 4], [4, 9, 9, 4], [18, 3, 8, 4], [18, 10, 9, 3], [32, 3, 10, 4], [32, 10, 10, 3]]) rect(t, x, y, ww, hh, 'g');
   rect(t, 40, 11, 6, 3, '~'); rect(t, 15, 4, 1, 1, 'T'); rect(t, 30, 12, 1, 1, 'T');
   for (let i = 0; i < 50; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  sidePath(t, 14, 9, 15);
   return {
     id: 'route2', name: 'でんせん街道', w, h, t, bgm: 'field',
     grass: [['birisuzume', 30], ['hanedoron', 22], ['hikaritanishi', 18], ['hinatagaeru', 15], ['kinokokko', 15]], lv: [7, 9], grassLit: [['lit_town2', [['hotaruusagi', 8]]], ['lit_town3', [['kirikamome', 10]]]],
-    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route2' }],
+    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route2' }, { type: 'sign', x: 16, y: 9, text: 'sign_to_lake' }],
     npcs: [{ id: 'farmhand', x: 27, y: 8, dir: 'l', pal: 'farmhand', script: 'farmhand', trainer: true, sight: 4 }],
-    warps: [{ x: 0, y: 7, to: 'town', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town2', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town2', tx: 1, ty: 13, dir: 'r' }],
+    warps: [{ x: 0, y: 7, to: 'town', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town2', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town2', tx: 1, ty: 13, dir: 'r' }, { x: 14, y: 15, to: 'lake', tx: 16, ty: 1, dir: 'd' }, { x: 15, y: 15, to: 'lake', tx: 17, ty: 1, dir: 'd' }],
   };
 }
 // ミドリ団地(仮): 近未来に改変された田舎の町。ビニールハウスが電脳化し、ドローンが飛ぶ
@@ -246,7 +249,7 @@ function buildTown2() {
   blockLamps(t, 'town2'); openRoad(t, w);
   const NEED2 = "この 町の あかりを ともさずに、さきへ すすむのは はやい きがする。\nあかり番の ナナと しょうぶを しよう。";
   return {
-    id: 'town2', name: 'ミドリ団地', w, h, t, bg: 'town2', bgm: 'town', btheme: 'neon', grass: null,
+    id: 'town2', name: 'ミドリ団地', w, h, t, bg: 'town2', bgm: 'town2', btheme: 'neon', grass: null,
     lamps: [110, 400, 690, 940, 1190].map((x) => ({ x, y: 298 })),
     objects: [
       { type: 'door', x: 6, y: 10, door: 'greenhouse' }, { type: 'door', x: 14, y: 10, door: 'kiosk' },
@@ -269,12 +272,13 @@ function buildRoute3() {
   for (const [x, y, ww, hh] of [[5, 3, 8, 4], [5, 9, 8, 4], [19, 3, 9, 4], [19, 10, 9, 3], [33, 3, 8, 4], [33, 10, 9, 3]]) rect(t, x, y, ww, hh, 'g');
   rect(t, 14, 11, 4, 3, '~'); rect(t, 44, 2, 4, 3, '~');
   for (let i = 0; i < 40; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  sidePath(t, 15, 0, 6);
   return {
     id: 'route3', name: 'しおかぜ街道', w, h, t, bgm: 'field', fog: 0.22,
     grass: [['sabikani', 26], ['kirikamome', 24], ['funenko', 20], ['hikaritanishi', 15], ['hinatagaeru', 15]], lv: [11, 13], grassLit: [['lit_town3', [['birisuzume', 8], ['hanedoron', 8]]]],
-    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route3' }],
+    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route3' }, { type: 'sign', x: 17, y: 6, text: 'sign_to_station' }],
     npcs: [{ id: 'sailor', x: 27, y: 8, dir: 'l', pal: 'sailor', script: 'sailor', trainer: true, sight: 4 }],
-    warps: [{ x: 0, y: 7, to: 'town2', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town2', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town3', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town3', tx: 1, ty: 13, dir: 'r' }],
+    warps: [{ x: 0, y: 7, to: 'town2', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town2', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town3', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town3', tx: 1, ty: 13, dir: 'r' }, { x: 15, y: 0, to: 'station', tx: 18, ty: 18, dir: 'u' }, { x: 16, y: 0, to: 'station', tx: 19, ty: 18, dir: 'u' }],
   };
 }
 // ナギサ港(仮): 霧の港町。灯台のあかりが消えている
@@ -284,7 +288,7 @@ function buildTown3() {
   openRoad(t, w);
   const NEED3 = 'この 港の あかりを ともさずに、さきへ すすむのは はやい きがする。\n灯台守の ゴロウと しょうぶを しよう。';
   return {
-    id: 'town3', name: 'ナギサ港', w, h, t, bg: 'town3', bgm: 'town', btheme: 'harbor', grass: null, fog: 0.45,
+    id: 'town3', name: 'ナギサ港', w, h, t, bg: 'town3', bgm: 'town3', btheme: 'harbor', grass: null, fog: 0.45,
     lamps: [{ x: 122, y: 298 }, { x: 402, y: 298 }, { x: 700, y: 298 }, { x: 962, y: 298 }, { x: 1104, y: 54 }], // 最後は 灯台の てっぺん
     objects: [
       { type: 'door', x: 6, y: 10, door: 'market' }, { type: 'door', x: 14, y: 10, door: 'warehouse' },
@@ -307,12 +311,13 @@ function buildRoute4() {
   for (const [x, y, ww, hh] of [[5, 3, 7, 4], [5, 9, 9, 4], [18, 3, 9, 4], [19, 9, 7, 4], [31, 3, 10, 4], [32, 10, 9, 3]]) rect(t, x, y, ww, hh, 'g');
   for (const [x, y] of [[13, 3], [13, 4], [14, 3], [15, 11], [16, 12], [28, 11], [28, 12], [29, 3], [29, 4], [43, 4], [44, 11], [45, 3]]) t[y][x] = 'T';
   for (let i = 0; i < 24; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  sidePath(t, 16, 0, 6);
   return {
     id: 'route4', name: 'やまなみ道', w, h, t, bgm: 'field', btheme: 'mountain', fog: 0.12,
     grass: [['sabikani', 18], ['hanedoron', 18], ['birisuzume', 18], ['kinokokko', 16], ['hotaruusagi', 18], ['pukurisu', 14]], lv: [14, 16],
-    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route4' }],
+    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route4' }, { type: 'sign', x: 15, y: 6, text: 'sign_to_ridge' }],
     npcs: [{ id: 'hiker', x: 24, y: 8, dir: 'l', pal: 'camper', script: 'hiker', trainer: true, sight: 4 }],
-    warps: [{ x: 0, y: 7, to: 'town3', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town3', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town4', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town4', tx: 1, ty: 13, dir: 'r' }],
+    warps: [{ x: 0, y: 7, to: 'town3', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town3', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town4', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town4', tx: 1, ty: 13, dir: 'r' }, { x: 16, y: 0, to: 'ridge', tx: 16, ty: 20, dir: 'u' }, { x: 17, y: 0, to: 'ridge', tx: 17, ty: 20, dir: 'u' }],
   };
 }
 // ヤマノハ: 山の 発電所の町。歩けるのは 石だたみ(11〜16行)。建物・柱は それより上、下は がけ
@@ -321,7 +326,7 @@ function buildTown4() {
   rect(t, 0, 0, w, 11, '#'); rect(t, 0, 17, w, 6, '#'); rect(t, w - 1, 0, 1, h, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, 0, 11, 1, 6, '.');
   const back = (y) => (y <= 12 ? 7 : 8);
   return {
-    id: 'town4', name: 'ヤマノハ', w, h, t, bg: 'town4', bgm: 'town', btheme: 'mountain', grass: null,
+    id: 'town4', name: 'ヤマノハ', w, h, t, bg: 'town4', bgm: 'town4', btheme: 'mountain', grass: null,
     lamps: [330, 620, 780, 1240].map((x) => ({ x, y: 298 })),
     objects: [{ type: 'door', x: 5, y: 10, door: 'clinic4' }, { type: 'door', x: 14, y: 10, door: 'shop4' }, { type: 'door', x: 30, y: 10, door: 'plant' }],
     npcs: [
@@ -334,8 +339,79 @@ function buildTown4() {
   };
 }
 
+// ---------- 寄り道(本編の 進み方は かわらない) ----------
+// 道に 分かれ道を あける: 列 x0,x0+1 の y0〜y1 を 小道にする
+function sidePath(t, x0, y0, y1) { rect(t, x0, y0, 2, y1 - y0 + 1, ','); }
+// こもれびの森(ひなた草原の 北)
+function buildForest() {
+  const w = 34, h = 22, t = blank(w, h, 'T'), r = rng(101);
+  rect(t, 8, 9, 18, 7, '.'); rect(t, 3, 3, 11, 8, '.'); rect(t, 20, 2, 12, 8, '.'); rect(t, 3, 14, 8, 5, '.'); rect(t, 24, 13, 7, 6, '.');
+  sidePath(t, 16, 13, 21); rect(t, 10, 11, 14, 2, ','); rect(t, 10, 7, 2, 5, ','); rect(t, 22, 6, 2, 6, ',');
+  rect(t, 5, 4, 5, 3, '~'); rect(t, 4, 15, 6, 3, 'g'); rect(t, 25, 14, 5, 4, 'g'); rect(t, 12, 13, 3, 2, 'g'); rect(t, 20, 9, 2, 2, 'g'); rect(t, 28, 3, 3, 4, 'g'); rect(t, 3, 8, 5, 2, 'g');
+  for (const [x, y] of [[14, 9], [19, 15], [8, 14], [31, 9], [21, 3]]) t[y][x] = 'T';
+  for (let i = 0; i < 46; i++) { const x = 3 + Math.floor(r() * (w - 6)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  return {
+    id: 'forest', name: 'こもれびの森', w, h, t, theme: 'forest', bgm: 'forest', amb: 'forest', btheme: 'field',
+    grass: [['kinokokko', 30], ['pukurisu', 24], ['hotaruusagi', 18], ['hinatagaeru', 14], ['birisuzume', 14]], lv: [5, 8],
+    objects: [{ type: 'lantern', x: 26, y: 5, look: 'lantern' }, { type: 'sign', x: 18, y: 18, text: 'sign_forest' }],
+    npcs: [{ id: 'woodsman', x: 22, y: 8, dir: 'l', pal: 'woodsman', script: 'woodsman', trainer: true, sight: 3 }],
+    warps: [{ x: 16, y: 21, to: 'route', tx: 28, ty: 1, dir: 'd' }, { x: 17, y: 21, to: 'route', tx: 29, ty: 1, dir: 'd' }],
+  };
+}
+// かがみ池(でんせん街道の 南)
+function buildLake() {
+  const w = 36, h = 22, t = blank(w, h, '.'), r = rng(131);
+  frame(t, w, h); rect(t, 0, 0, 1, h, 'T'); rect(t, w - 2, 0, 2, h, 'T'); rect(t, 0, 0, 2, h, 'T');
+  sidePath(t, 16, 0, 5);
+  rect(t, 9, 8, 18, 8, '~'); rect(t, 11, 7, 12, 1, '~'); rect(t, 12, 16, 11, 1, '~'); rect(t, 7, 10, 2, 4, '~'); rect(t, 27, 10, 2, 4, '~');
+  rect(t, 16, 14, 2, 3, '='); // 桟橋
+  rect(t, 3, 3, 8, 3, 'g'); rect(t, 24, 3, 8, 3, 'g'); rect(t, 3, 17, 9, 2, 'g'); rect(t, 25, 17, 8, 2, 'g'); rect(t, 31, 9, 2, 6, 'g');
+  for (const [x, y] of [[5, 8], [4, 13], [30, 7], [13, 3], [22, 18], [14, 18]]) t[y][x] = 'T';
+  for (let i = 0; i < 30; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 2 + Math.floor(r() * (h - 4)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  return {
+    id: 'lake', name: 'かがみ池', w, h, t, theme: 'lake', bgm: 'lake', amb: 'lake', btheme: 'harbor', fog: 0.08,
+    grass: [['hinatagaeru', 26], ['shizukufin', 24], ['hikaritanishi', 24], ['kinokokko', 12], ['birisuzume', 14]], lv: [8, 11],
+    objects: [{ type: 'sign', x: 18, y: 3, text: 'sign_lake' }, { type: 'easel', x: 19, y: 18, look: 'easel' }],
+    npcs: [{ id: 'painter', x: 18, y: 18, dir: 'r', pal: 'painter', script: 'painter' }],
+    warps: [{ x: 16, y: 0, to: 'route2', tx: 14, ty: 14, dir: 'u' }, { x: 17, y: 0, to: 'route2', tx: 15, ty: 14, dir: 'u' }],
+  };
+}
+// ひとつ星駅(しおかぜ街道の 北の 廃駅)
+function buildStation() {
+  const w = 38, h = 20, t = blank(w, h, '.'), r = rng(157);
+  frame(t, w, h);
+  sidePath(t, 18, 12, 19);
+  rect(t, 1, 4, w - 2, 3, 'r'); rect(t, 5, 8, 28, 3, '='); rect(t, 18, 11, 2, 2, ',');
+  rect(t, 3, 13, 9, 4, 'g'); rect(t, 26, 13, 9, 4, 'g'); rect(t, 2, 2, 7, 2, 'g'); rect(t, 29, 2, 7, 2, 'g');
+  for (const [x, y] of [[13, 15], [24, 14], [2, 11], [35, 11]]) t[y][x] = 'T';
+  for (let i = 0; i < 22; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 11 + Math.floor(r() * (h - 13)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  return {
+    id: 'station', name: 'ひとつ星駅', w, h, t, theme: 'station', bgm: 'station', amb: 'station', btheme: 'dusk', fog: 0.12,
+    grass: [['hanedoron', 24], ['birisuzume', 24], ['sabikani', 20], ['funenko', 16], ['hotaruusagi', 16]], lv: [12, 14],
+    objects: [{ type: 'train', x: 7, y: 4, w: 7, h: 2, look: 'train' }, { type: 'bench', x: 24, y: 8, w: 2, look: 'bench' }, { type: 'stationsign', x: 15, y: 8, w: 2, look: 'stationsign' }, { type: 'lantern', x: 31, y: 8, look: 'stationlamp' }, { type: 'sign', x: 20, y: 17, text: 'sign_station' }],
+    npcs: [{ id: 'stationman', x: 21, y: 9, dir: 'l', pal: 'stationman', script: 'stationman' }],
+    warps: [{ x: 18, y: 19, to: 'route3', tx: 15, ty: 1, dir: 'd' }, { x: 19, y: 19, to: 'route3', tx: 16, ty: 1, dir: 'd' }],
+  };
+}
+// 星見の尾根(やまなみ道の 北)
+function buildRidge() {
+  const w = 34, h = 22, t = blank(w, h, 'R'), r = rng(181);
+  rect(t, 12, 15, 11, 5, '.'); sidePath(t, 16, 17, 21); rect(t, 4, 11, 14, 6, '.'); rect(t, 17, 9, 13, 6, '.'); rect(t, 8, 5, 14, 6, '.'); rect(t, 20, 2, 10, 7, '.'); rect(t, 3, 3, 6, 5, '.'); rect(t, 7, 6, 3, 6, '.');
+  rect(t, 16, 12, 2, 6, ','); rect(t, 16, 8, 2, 4, ','); rect(t, 17, 6, 8, 2, ','); rect(t, 24, 4, 2, 3, ',');
+  rect(t, 5, 12, 6, 4, 'g'); rect(t, 21, 10, 7, 4, 'g'); rect(t, 10, 5, 5, 4, 'g'); rect(t, 3, 3, 4, 3, 'g');
+  for (const [x, y] of [[13, 13], [27, 3], [21, 3], [9, 10], [19, 14], [12, 17]]) t[y][x] = 'R';
+  for (let i = 0; i < 26; i++) { const x = 3 + Math.floor(r() * (w - 6)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  return {
+    id: 'ridge', name: '星見の尾根', w, h, t, theme: 'ridge', bgm: 'ridge', amb: 'mountain', btheme: 'mountain',
+    grass: [['hotaruusagi', 20], ['kirikamome', 18], ['hanedoron', 18], ['sabikani', 14], ['kinokokko', 14], ['pukurisu', 10], ['fukufukurisu', 3], ['hinatagama', 3]], lv: [16, 18],
+    objects: [{ type: 'cairn', x: 25, y: 3, look: 'cairn' }, { type: 'sign', x: 19, y: 18, text: 'sign_ridge' }],
+    npcs: [{ id: 'stargazer', x: 21, y: 7, dir: 'd', pal: 'stargazer', script: 'stargazer', trainer: true, sight: 2 }],
+    warps: [{ x: 16, y: 21, to: 'route4', tx: 16, ty: 1, dir: 'd' }, { x: 17, y: 21, to: 'route4', tx: 17, ty: 1, dir: 'd' }],
+  };
+}
+
 // 会話のときに出る名前(立ち絵の名前札)。立ち絵のファイルは assets/p_<id>.webp
-const NPC_NAMES = { hiker: 'タケ', ygranny: 'ヤマノハの おばあさん', yboy: 'ヤマノハの 少年', yshop: '店の人', keeper: '番人', minato2: 'ミナト', minato3: 'ミナト', elder: 'おじいさん', child: 'こども', nurse: '看護師', granny: 'おばあさん', traveler: '旅人', teacher: 'わざの先生', goro: 'ゴロウ', sailor: 'ヒデ', fisher: '漁師のおじさん', dockgirl: '港の少女', rival: 'ミナト', camper: 'ユウジ', techie: 'レン', farmhand: 'ハルキ', nana: 'ナナ', farmer: '農家のおばさん', nboy: '少年', oldman: '町の老人', girl: '少女', clerk: '店員' };
+const NPC_NAMES = { woodsman: '木こりの ゲン', painter: '絵かきの サキ', stationman: '駅員の おじいさん', stargazer: '星読みの ホシノ', hiker: 'タケ', ygranny: 'ヤマノハの おばあさん', yboy: 'ヤマノハの 少年', yshop: '店の人', keeper: '番人', minato2: 'ミナト', minato3: 'ミナト', elder: 'おじいさん', child: 'こども', nurse: '看護師', granny: 'おばあさん', traveler: '旅人', teacher: 'わざの先生', goro: 'ゴロウ', sailor: 'ヒデ', fisher: '漁師のおじさん', dockgirl: '港の少女', rival: 'ミナト', camper: 'ユウジ', techie: 'レン', farmhand: 'ハルキ', nana: 'ナナ', farmer: '農家のおばさん', nboy: '少年', oldman: '町の老人', girl: '少女', clerk: '店員' };
 
 const PALETTES = {
   hero: { body: '#7ed9b8', body2: '#4fb596', hat: '#ffd36b', hair: '#6b4535', skin: '#ffe0c4', scarf: '#ff8f7a' },
@@ -352,6 +428,10 @@ const PALETTES = {
   goro: { body: '#8d7a62', body2: '#6d5a44', hat: '#37323f', hair: '#e8e8f0', skin: '#e8c9a8', scarf: '#d9c27a' },
   fisher: { body: '#6f8f8a', body2: '#4f6f6a', hat: '#c9b27a', hair: '#8a8a94', skin: '#e8c9a8', scarf: '#c9b27a' },
   teacher: { body: '#b79d8a', body2: '#977d6a', hat: '#d9c9a8', hair: '#e8e8f0', skin: '#f6d9bf', scarf: '#8a6fd0' },
+  woodsman: { body: '#8a6a4a', body2: '#6a4e36', hat: '#4f6a4a', hair: '#3a2a20', skin: '#e8c9a8', scarf: '#c97a4a' },
+  painter: { body: '#7a8ab0', body2: '#5a6a90', hat: '#c25a62', hair: '#5a3a44', skin: '#ffe0c4', scarf: '#e8d6a0' },
+  stationman: { body: '#4a5070', body2: '#343a56', hat: '#2c3048', hair: '#d8d6dc', skin: '#e8c9a8', scarf: '#c9a63a' },
+  stargazer: { body: '#5a4a7a', body2: '#42345c', hat: '#2a2438', hair: '#bfb4d0', skin: '#ffe0c4', scarf: '#8fd0c8' },
   keeper: { body: '#5f7068', body2: '#45544e', hat: '#34323a', hair: '#e8e6e4', skin: '#e8c9a8', scarf: '#8a7a5a' },
   rival: { body: '#a38cff', body2: '#7f68e0', hat: '#ff6b8a', hair: '#2a2438', skin: '#ffe0c4', scarf: '#ffd36b' },
 };
