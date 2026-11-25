@@ -233,7 +233,7 @@ async function wipe(dur = 0.5) {
 async function flashFx(n = 3) { for (let i = 0; i < n; i++) { await anim(0.1, (k) => { ui.flash = 1 - k; }); } ui.flash = 0; }
 
 // ---------- 世界(マップ・歩く) ----------
-const MAPS = { village: buildVillage(), route: buildRoute(), town: buildTown(), route2: buildRoute2(), town2: buildTown2(), route3: buildRoute3(), town3: buildTown3() };
+const MAPS = { village: buildVillage(), route: buildRoute(), town: buildTown(), route2: buildRoute2(), town2: buildTown2(), route3: buildRoute3(), town3: buildTown3(), route4: buildRoute4(), town4: buildTown4() };
 function prepMap(m) {
   m.blocked = m.t.map((r) => r.map((c) => 'T~F#'.includes(c)));
   m.doors = {}; m.signs = {};
@@ -254,6 +254,8 @@ const SPOTS = {
   town2: [{ x: 8, y: 18, item: 'cure' }, { x: 30, y: 19, item: 'coin', n: 200 }],
   route3: [{ x: 8, y: 5, item: 'potion', n: 2 }, { x: 22, y: 11, item: 'cure' }, { x: 45, y: 13, item: 'ball', n: 2 }],
   town3: [{ x: 9, y: 14, item: 'coin', n: 150 }, { x: 36, y: 14, item: 'potion', n: 2 }],
+  route4: [{ x: 8, y: 5, item: 'potion', n: 2 }, { x: 23, y: 11, item: 'cure', n: 2 }, { x: 46, y: 12, item: 'ball', n: 3 }],
+  town4: [{ x: 36, y: 15, item: 'potion', n: 3 }, { x: 3, y: 16, item: 'coin', n: 300 }],
 };
 for (const k in SPOTS) MAPS[k].spots = SPOTS[k];
 // つり: 水の方を向いてAボタン。場所ごとに つれる子([種族, 重み])とレベル
@@ -273,7 +275,7 @@ function enterMap(id, x, y, dir, quiet) {
   for (const k in MAPS) if (MAPS[k] !== m) delete MAPS[k]._cache; // いまの地図だけ、地面の絵を持つ
   if (!walkable(m, x, y)) [x, y] = nearestWalkable(m, x, y); // 古いセーブなどで 歩けない所に いたら 直す
   const p = world.p; p.x = x; p.y = y; p.dir = dir; p.ox = p.oy = 0; p.pending = false; p.turnT = 0;
-  world.npcs = m.npcs.map((n) => ({ ...n, ox: 0, oy: 0, step: 0, tt: rnd(2, 5), idle: n.idle ?? ['child', 'granny', 'traveler'].includes(n.id) }));
+  world.npcs = m.npcs.filter((n) => !n.need || S.flags[n.need]).map((n) => ({ ...n, ox: 0, oy: 0, step: 0, tt: rnd(2, 5), idle: n.idle ?? ['child', 'granny', 'traveler'].includes(n.id) }));
   placeFollower(); world.cam = world.lampK = null; world.night = 0;
   Aud.bgm(m.bgm);
   for (const [flag] of m.grassLit || []) { const key = 'spawn_' + m.id + '_' + flag; if (S.flags[flag] && !S.flags[key]) { S.flags[key] = true; bondEvents.push('あかりに ひかれて、あたらしい 子が あつまってきた!'); break; } }
@@ -535,7 +537,7 @@ paintGrain();
 let gradeLevel = 2, manualGrade = false; // 2 ふつう / 1 かるい(色合いだけ) / 0 なし
 let gradeOn = true, gOx = 0, gOy = 0, gT = 0, warmDbg = null;
 // 旅が進むほど世界があたたかくなる: 0(青灰色のしずかな空気)→1(金色のやわらかい光)。いまはずかんとライバル戦の進み具合から決める
-const warmth = () => (warmDbg != null ? warmDbg : clamp(dexCount() / SPECIES_ORDER.length * 0.12 + (S.flags.beat_camper ? 0.02 : 0) + (S.flags.beat_rival ? 0.05 : 0) + (S.flags.beat_farmhand ? 0.02 : 0) + (S.flags.lit_town ? 0.22 : 0) + (S.flags.lit_town2 ? 0.22 : 0) + (S.flags.lit_town3 ? 0.25 : 0), 0, 1));
+const warmth = () => (warmDbg != null ? warmDbg : clamp(dexCount() / SPECIES_ORDER.length * 0.12 + (S.flags.beat_camper ? 0.02 : 0) + (S.flags.beat_rival ? 0.05 : 0) + (S.flags.beat_farmhand ? 0.02 : 0) + (S.flags.lit_town ? 0.22 : 0) + (S.flags.lit_town2 ? 0.22 : 0) + (S.flags.lit_town3 ? 0.25 : 0) + (S.flags.lit_town4 ? 0.3 : 0), 0, 1));
 let warmNow = null; // 画面に出している暖かさ(目標へゆっくり近づく)
 const hx = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mixc = (a, b, t) => { const A = hx(a), B = hx(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(',')})`; };

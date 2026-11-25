@@ -4,6 +4,7 @@ const TEXT = {
   sign_village: 'ここは ひなた村。のんびり やさしい 村です。\n→ 東: ひなた草原',
   sign_home: 'ここは あなたの いえ。',
   sign_route: 'ひなた草原。\nモンスターが とびだす 草むらに ちゅうい!',
+  sign_route4: 'やまなみ道。\nこの さきは 山の町 ヤマノハ。',
   sign_route3: 'しおかぜ街道。\n霧が こい日は、足もとに ちゅうい。',
   sign_route2: 'でんせん街道。\n電線の うえの 鳥に ちゅうい!',
   sign_gate: 'この さきは 大きな 町へ つづく ゲート。\n(つづきは また こんど…)',
@@ -28,6 +29,11 @@ const TRAINERS = {
   goro: { name: 'ゴロウ', title: 'ナギサ港の 灯台守', cut: true, boss: true, hook: 'lightTown', team: [['sabikani', 13], ['funenko', 13], ['kirikamome', 13]], reward: 800,
     intro: ['この 港の 灯台は、もう なんねんも ともっていない。', 'あかりが 消えて、船も 人も 港から はなれていった。', 'それでも わしは、ここで まっていたんだ。…ためさせて もらうぞ。'], talk: 'もう いちど、やるか?',
     win: ['…きみには、あかりを とともす ちからが ある。', 'さあ、灯台の あかりを、ともしてくれ。'], outro: ['あかりを、もういちど ともそう。'], after: '灯台の あかりが、船の かえる みちしるべに なる。\nありがとうな。' },
+  hiker: { name: 'タケ', team: [['sabikani', 15], ['hanedoron', 15]], reward: 420,
+    intro: ['この 山道は、ダムの 町へ つづいてる。', '足ごしらえは いいか? しょうぶだ!'], talk: 'もう いちど、やるか?',
+    win: ['はっはっ、いい 足どりだ。'], outro: ['ヤマノハには 診療所が ある。\n発電所へ 行くまえに、やすんでいけよ。'], after: '発電所の あかりは、まだ きえたままだ。' },
+  minato2: { name: 'ミナト', title: '灯守りの 孫', boss: true, team: [['fukufukurisu', 17], ['hinatagama', 17], ['kirikamome', 18]], reward: 1000,
+    intro: [], win: ['…また、まけた。'], outro: ['ひとりじゃ、とどかないんだ。\n……手を、かして ほしい。'], after: '' },
   techie: { name: 'レン', title: 'ひだまり町の あかり番', cut: true, boss: true, team: [['hotaruusagi', 6], ['pukurisu', 6]], reward: 250,
     intro: ['この 町の 電線の したで、ずっと れんしゅう してたんだ。', 'しょうぶだ!'], talk: 'また しょうぶ する?',
     win: ['…ぼくの まけか。\nあたたかい しょうぶ だったよ。'], hook: 'lightTown', outro: ['ほたるうさぎの あかりは、よるでも まちを てらしてくれる。'], after: 'ほたるうさぎの あかりは、よるの 道を あたためてくれるんだ。' },
@@ -46,8 +52,9 @@ async function healScene() {
 }
 async function whiteout() {
   await say('めのまえが まっくらに なった…'); await fade(1, 0.5);
-  enterMap('village', 6, 8, 'd', true); healAll(); await sleep(0.4); await fade(0, 0.5);
-  await say('ひなた村の いえで めを さました。\nみんな げんきに なったよ。');
+  const mt = S.flags.ch_town4 && (world.map.id === 'town4' || world.map.id === 'route4'); // 山では 山の 診療所へ
+  if (mt) enterMap('town4', 5, 11, 'd', true); else enterMap('village', 6, 8, 'd', true); healAll(); await sleep(0.4); await fade(0, 0.5);
+  await say(mt ? '山の 診療所で めを さました。\nみんな げんきに なったよ。' : 'ひなた村の いえで めを さました。\nみんな げんきに なったよ。');
 }
 async function afterBattle(r) {
   Aud.bgm(world.map.bgm);
@@ -114,6 +121,9 @@ async function doorScript(id) {
   if (id === 'warehouse') { await say('古い 倉庫の とびらは さびついている。\nなかから、ぎいぎい という おとが きこえる。'); return; }
   if (id === 'clinic3') { await say('ちいさな 診療所。\nなかで ひとやすみ していく?'); const c = await choose(['やすむ', 'やめておく'], { x: 440, y: 150, w: 170, cancel: 1 }); if (c === 0) { await healScene(); await say('しおかぜの おちゃを のんで、みんな げんきに なった。'); } return; }
   if (id === 'lighthouse') { await say(S.flags.lit_town3 ? '灯台の てっぺんで、あかりが ゆっくり まわっている。' : '灯台の とびらは、かたく とざされている。'); return; }
+  if (id === 'clinic4') { await say('山の 診療所。\nなかで ひとやすみ していく?'); const c = await choose(['やすむ', 'やめておく'], { x: 440, y: 150, w: 170, cancel: 1 }); if (c === 0) { await healScene(); await say('あつい 山の お茶を のんで、みんな げんきに なった。'); } return; }
+  if (id === 'shop4') { setSpeaker('yshop'); await say('山の 上まで、よく きたね。\nしなものは そろってるよ。'); await shop(); return; }
+  if (id === 'plant') { await plantDoor(); return; }
   if (id === 'greenhouse') { await say('ビニールハウスの なかで、ロボットたちが うごかずに ならんでいる。'); return; }
   if (id === 'kiosk') { await say('自動販売機が ちかちか ひかっている。\n「ざんねん、ざいこ ぎれ」と ひょうじされた。'); return; }
   if (id === 'datacenter') { await say('大きな とびらは、とじたままだ。\nなかから、かすかな うなりごえが きこえる。'); return; }
@@ -246,9 +256,17 @@ async function runScript(id, n) {
       await sayAll(S.flags.lit_town3 ? ['灯台が まわってるのを みたのは、ひさしぶりだ。', '海も、すこし あったかく なった きがするよ。'] : ['この港も、むかしは 漁師で にぎわったもんだ。', '霧の日に 灯台の あかりが 消えちまってから、船が へってな…。']); break;
     case 'dockgirl':
       await sayAll(S.flags.lit_town3 ? ['ねえ、みて! カモメが 灯台の まわりを とんでる!', 'キリカモメが、ちゃんと かえってきたんだよ。'] : ['キリカモメは、霧の なかを じっと とんでるの。', 'きっと、灯台の あかりを さがしてるんだ。']); break;
+    case 'ygranny':
+      await sayAll(S.flags.cleared ? ['番人さんが、町へ おりてきて くれたよ。', 'ありがとうねえ。ほんとうに。'] : ['番人さんは、ずっと 発電所に ひとりで いるよ。', 'あの 夜から、いちども 町へ おりて いないんだ。']); break;
+    case 'yboy':
+      await sayAll(S.flags.cleared ? ['夜も あかるいんだ!', '白い うさぎが、ときどき まどから 見てるよ。'] : ['発電所の おくで、大きな 白い 子が ねてるんだって。', 'じいさまは、その子の そばを はなれないんだ。']); break;
+    case 'keeper':
+      await sayAll(['相棒は、よく ねて、よく 起きるように なったよ。', 'また いつでも おいで。']); break;
+    case 'minato3':
+      await sayAll(['灯守りの しごと、思ったより いそがしいんだ。', '…でも、たのしいよ。\nきみの 旅の 話、また きかせて。']); break;
     case 'clerk':
       await say(S.flags.beat_rival ? 'おみせ、あけたよ! ドアから はいってね。' : 'ごめんね、おみせは まだ じゅんびちゅうなんだ。\nもうすこし まっててくれる?'); break;
-    case 'rival': case 'camper': case 'techie': case 'farmhand': case 'nana': case 'sailor': case 'goro': {
+    case 'rival': case 'camper': case 'techie': case 'farmhand': case 'nana': case 'sailor': case 'goro': case 'hiker': {
       const T = TRAINERS[n.id];
       if (S.flags['beat_' + n.id]) await say(T.after);
       else { await say(T.talk || 'しょうぶだ!'); await trainerBattle(n); }
@@ -303,8 +321,11 @@ function goalInfo() {
   else if (!F.lit_town) { goal = '草原の ゲートを ぬけて「ひだまり町」へ。あかり番の レンに かつと、町の 街灯が ともるよ。'; rec = 11; }
   else if (!F.lit_town2) { goal = '「ひだまり町」の 東の 出口から「でんせん街道」へ。さきの「ミドリ団地」で、あかり番の ナナに ちょうせんしよう。'; rec = 15; }
   else if (!F.lit_town3) { goal = '「ミドリ団地」の 東へ すすんで「しおかぜ街道」へ。「ナギサ港」の 灯台守 ゴロウに ちょうせんしよう。'; rec = 20; }
-  else if (F.minato_mountain) { goal = 'ミナトを 追って、山の町「ヤマノハ」へ。番人が まっている。\n(第四章は じゅんびちゅう。ずかんを うめて まっていてね)'; rec = 99; }
-  else { goal = '3つの あかりが ともった。ずかんを うめながら、旅を つづけよう。(つづく…)'; rec = 99; }
+  else if (F.cleared) { goal = 'すべての あかりが ともった。\nずかんを うめながら、すきな 町へ 旅を つづけよう。'; rec = 0; }
+  else if (F.met_keeper) { goal = 'ヤマノハの 発電所で、ミナトと しょうぶしよう。'; rec = 19; }
+  else if (F.ch_town4) { goal = 'ヤマノハの「発電所」の とびらを たずねよう。'; rec = 18; }
+  else if (F.minato_mountain) { goal = '「ナギサ港」の 東の「やまなみ道」を こえて、山の町「ヤマノハ」へ。\nミナトと 番人が まっている。'; rec = 17; }
+  else { goal = '3つの あかりが ともった。「ナギサ港」の 東の「やまなみ道」へ すすもう。'; rec = 17; }
   const hurt = S.party.some((m) => m.hp <= 0), hints = [];
   if (hurt) hints.push('ひんしの 子が いるよ。診療所や 休憩所で やすませよう。');
   if ((S.bag.potion || 0) <= 0 && F.beat_rival) hints.push('きずぐすりが ない。町の おみせで かえるよ。');
@@ -503,9 +524,9 @@ function drawTitle() {
 let endT = 0;
 async function endingScene() {
   Aud.sfx('win'); await fade(1, 0.8, '#10202a'); mode = 'ending'; endT = clock; ui.dialog = null; flushBtn(); await fade(0, 0.8);
-  await sleep(4.5); await say('ミナトは、山へ むかった。\n番人と、まだ 見ぬ 灯守りが、きみを まっている――。', { w: 616 });
+  await sleep(5); await say('ここまで あそんでくれて、ありがとう。\n旅の つづきは「つづきから」で。', { w: 616 });
   await sleep(0.3); flushBtn(); await nextBtn();
-  await fade(1, 0.6); mode = 'title'; Aud.bgm('title'); await fade(0, 0.5); await titleScreen();
+  await fade(1, 0.6); if (preview) { location.href = location.pathname; return; } mode = 'title'; Aud.bgm('title'); await fade(0, 0.5); await titleScreen();
 }
 function drawEnding() {
   const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#1d2f4d'); sky.addColorStop(0.6, '#5b5a8f'); sky.addColorStop(1, '#f2a67c'); g.fillStyle = sky; g.fillRect(0, 0, W, H);
@@ -515,7 +536,7 @@ function drawEnding() {
   const hb = Art.portrait('hero_back'), hh = 208, hw = hb.width * hh / hb.height; g.globalAlpha = a; g.drawImage(hb, 16, 300 - hh, hw, hh); g.globalAlpha = 1;
   S.party.slice(0, 6).forEach((m, i) => { const x = 230 + i * 70, bob = Math.abs(Math.sin(clock * 2 + i)) * 7; g.globalAlpha = a; g.drawImage(Art.sprites[m.sp], x - 34, 274 - 70 - bob, 68, 68); g.globalAlpha = 1; });
   g.globalAlpha = a; txt('シャープワールド', 320, 74, { size: 40, w: 900, align: 'center', color: '#fff6dc', stroke: 'rgba(40,30,60,.6)', sw: 8 });
-  txt('つづく…', 320, 124, { size: 26, w: 900, align: 'center', color: '#ffd36b', stroke: 'rgba(40,30,60,.6)', sw: 6 });
+  txt('― おわり ―', 320, 124, { size: 26, w: 900, align: 'center', color: '#ffd36b', stroke: 'rgba(40,30,60,.6)', sw: 6 });
   const min = Math.floor(S.time / 60);
   txt(`ずかん ${dexCount()} / ${SPECIES_ORDER.length}      あるいた ほすう ${S.steps}      プレイ ${min}ぷん`, 320, 176, { size: 15, align: 'center', color: '#fff', stroke: 'rgba(40,30,60,.55)', sw: 5 });
   g.globalAlpha = 1;
@@ -566,14 +587,16 @@ function loop(t) {
   resize(); loadOp();
   try { await Promise.race([document.fonts.load('700 16px "Zen Kaku Gothic New"'), new Promise((r) => setTimeout(r, 1500))]); } catch (e) {}
   try { const o = JSON.parse(localStorage.getItem('mofu.opts') || '{}'); if (o.gl != null) { gradeLevel = o.gl; manualGrade = true; } } catch (e) {}
-  await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp' });
+  await Art.init(window.ART_SRC || { mikanya: 'assets/mikanya.webp', pukurisu: 'assets/pukurisu.webp', hotaruusagi: 'assets/hotaruusagi.webp', kinokokko: 'assets/kinokokko.webp', hinatagaeru: 'assets/hinatagaeru.webp', shizukufin: 'assets/shizukufin.webp', p_hero: 'assets/p_hero.webp', p_hero_back: 'assets/p_hero_back.webp', bg_town4: 'assets/bg_town4.webp' });
   { const m = /[?&]oto=(now|[a-e])(?:&|$)/.exec(location.search); if (m) Aud.setTheme(m[1]); } // 音の候補の ためしぎき
   mode = 'start'; startAt = 0; lastT = performance.now(); requestAnimationFrame(loop);
   await startScreen();
   if (/[?&]battle=1(?:&|$)/.test(location.search)) { await battlePreview(); return; }
   const kioku = /[?&]kioku=(all|[1-3])(?:&|$)/.exec(location.search);
   if (kioku) { await storyPreview(kioku[1]); return; }
-  const chap = /[?&]chapter=(all|[0-3])(?:&|$)/.exec(location.search);
+  const yama = /[?&]yama=(1|end)(?:&|$)/.exec(location.search);
+  if (yama) { await yamaPreview(yama[1]); return; }
+  const chap = /[?&]chapter=(all|[0-4])(?:&|$)/.exec(location.search);
   if (chap) { await chapterPreview(chap[1]); return; }
   const akari = /[?&]akari=(town[23]?)(?:&|$)/.exec(location.search);
   if (akari) { await lightPreview(akari[1]); return; }

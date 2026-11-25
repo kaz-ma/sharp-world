@@ -503,7 +503,7 @@ const Art = (() => {
 
   // ---------- 立ち絵(会話で大きく出る絵)。assets/p_<id>.webp があればそれを、なければ仮の絵(ちびキャラの拡大) ----------
   const PW = 240, PH = 270, portraits = {};
-  const PAL_OF = { oldman: 'elder', girl: 'child', clerk: 'nurse', farmer: 'granny', nboy: 'child', dockgirl: 'child' };
+  const PAL_OF = { minato2: 'rival', minato3: 'rival', ygranny: 'granny', yboy: 'child', yshop: 'nurse', hiker: 'camper', oldman: 'elder', girl: 'child', clerk: 'nurse', farmer: 'granny', nboy: 'child', dockgirl: 'child' };
   function portrait(id) {
     if (portraits[id]) return portraits[id];
     const c = cv(PW * R, PH * R), g = c.getContext('2d'), im = imgs['p_' + id];

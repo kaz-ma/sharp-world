@@ -295,13 +295,47 @@ function buildTown3() {
       { id: 'dockgirl', x: 19, y: 14, dir: 'l', pal: 'child', script: 'dockgirl', idle: true },
       { id: 'goro', x: 30, y: 13, dir: 'l', pal: 'goro', script: 'goro', trainer: true, sight: 4 },
     ],
-    warps: [{ x: 0, y: 11, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 12, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: 0, y: 14, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 11, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 12, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 13, to: 'end', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 14, to: 'end', needs: 'lit_town3', needMsg: NEED3 }],
+    warps: [{ x: 0, y: 11, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 12, to: 'route3', tx: 48, ty: 7, dir: 'l' }, { x: 0, y: 13, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: 0, y: 14, to: 'route3', tx: 48, ty: 8, dir: 'l' }, { x: w - 1, y: 11, to: 'route4', tx: 1, ty: 7, dir: 'r', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 12, to: 'route4', tx: 1, ty: 7, dir: 'r', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 13, to: 'route4', tx: 1, ty: 8, dir: 'r', needs: 'lit_town3', needMsg: NEED3 }, { x: w - 1, y: 14, to: 'route4', tx: 1, ty: 8, dir: 'r', needs: 'lit_town3', needMsg: NEED3 }],
     lightText: ['灯台の てっぺんで、おおきな あかりが ゆっくり まわりはじめた。', '霧の むこうから、船の ひびきが ちかづいてくる。'],
   };
 }
 
+// 4章の道: やまなみ道
+function buildRoute4() {
+  const w = 50, h = 16, t = blank(w, h, '.'), r = rng(71);
+  frame(t, w, h); rect(t, 49, 5, 1, 6, '.'); rect(t, 0, 7, w, 2, ',');
+  for (const [x, y, ww, hh] of [[5, 3, 7, 4], [5, 9, 9, 4], [18, 3, 9, 4], [19, 9, 7, 4], [31, 3, 10, 4], [32, 10, 9, 3]]) rect(t, x, y, ww, hh, 'g');
+  for (const [x, y] of [[13, 3], [13, 4], [14, 3], [15, 11], [16, 12], [28, 11], [28, 12], [29, 3], [29, 4], [43, 4], [44, 11], [45, 3]]) t[y][x] = 'T';
+  for (let i = 0; i < 24; i++) { const x = 2 + Math.floor(r() * (w - 4)), y = 3 + Math.floor(r() * (h - 6)); if (t[y][x] === '.') t[y][x] = 'f'; }
+  return {
+    id: 'route4', name: 'やまなみ道', w, h, t, bgm: 'field', btheme: 'mountain', fog: 0.12,
+    grass: [['sabikani', 18], ['hanedoron', 18], ['birisuzume', 18], ['kinokokko', 16], ['hotaruusagi', 18], ['pukurisu', 14]], lv: [14, 16],
+    objects: [{ type: 'sign', x: 3, y: 6, text: 'sign_route4' }],
+    npcs: [{ id: 'hiker', x: 24, y: 8, dir: 'l', pal: 'camper', script: 'hiker', trainer: true, sight: 4 }],
+    warps: [{ x: 0, y: 7, to: 'town3', tx: 38, ty: 12, dir: 'l' }, { x: 0, y: 8, to: 'town3', tx: 38, ty: 13, dir: 'l' }, { x: 49, y: 7, to: 'town4', tx: 1, ty: 12, dir: 'r' }, { x: 49, y: 8, to: 'town4', tx: 1, ty: 13, dir: 'r' }],
+  };
+}
+// ヤマノハ: 山の 発電所の町。歩けるのは 石だたみ(11〜16行)。建物・柱は それより上、下は がけ
+function buildTown4() {
+  const w = 40, h = 23, t = blank(w, h, '.');
+  rect(t, 0, 0, w, 11, '#'); rect(t, 0, 17, w, 6, '#'); rect(t, w - 1, 0, 1, h, '#'); rect(t, 0, 0, 1, h, '#'); rect(t, 0, 11, 1, 6, '.');
+  const back = (y) => (y <= 12 ? 7 : 8);
+  return {
+    id: 'town4', name: 'ヤマノハ', w, h, t, bg: 'town4', bgm: 'town', btheme: 'mountain', grass: null,
+    lamps: [330, 620, 780, 1240].map((x) => ({ x, y: 298 })),
+    objects: [{ type: 'door', x: 5, y: 10, door: 'clinic4' }, { type: 'door', x: 14, y: 10, door: 'shop4' }, { type: 'door', x: 30, y: 10, door: 'plant' }],
+    npcs: [
+      { id: 'ygranny', x: 9, y: 13, dir: 'd', pal: 'granny', script: 'ygranny', idle: true },
+      { id: 'yboy', x: 19, y: 15, dir: 'r', pal: 'child', script: 'yboy', idle: true },
+      { id: 'keeper', x: 33, y: 12, dir: 'd', pal: 'keeper', script: 'keeper', need: 'cleared' },
+      { id: 'minato3', x: 27, y: 12, dir: 'd', pal: 'rival', script: 'minato3', need: 'cleared' },
+    ],
+    warps: [11, 12, 13, 14, 15, 16].map((y) => ({ x: 0, y, to: 'route4', tx: 48, ty: back(y), dir: 'l' })),
+  };
+}
+
 // 会話のときに出る名前(立ち絵の名前札)。立ち絵のファイルは assets/p_<id>.webp
-const NPC_NAMES = { elder: 'おじいさん', child: 'こども', nurse: '看護師', granny: 'おばあさん', traveler: '旅人', teacher: 'わざの先生', goro: 'ゴロウ', sailor: 'ヒデ', fisher: '漁師のおじさん', dockgirl: '港の少女', rival: 'ミナト', camper: 'ユウジ', techie: 'レン', farmhand: 'ハルキ', nana: 'ナナ', farmer: '農家のおばさん', nboy: '少年', oldman: '町の老人', girl: '少女', clerk: '店員' };
+const NPC_NAMES = { hiker: 'タケ', ygranny: 'ヤマノハの おばあさん', yboy: 'ヤマノハの 少年', yshop: '店の人', keeper: '番人', minato2: 'ミナト', minato3: 'ミナト', elder: 'おじいさん', child: 'こども', nurse: '看護師', granny: 'おばあさん', traveler: '旅人', teacher: 'わざの先生', goro: 'ゴロウ', sailor: 'ヒデ', fisher: '漁師のおじさん', dockgirl: '港の少女', rival: 'ミナト', camper: 'ユウジ', techie: 'レン', farmhand: 'ハルキ', nana: 'ナナ', farmer: '農家のおばさん', nboy: '少年', oldman: '町の老人', girl: '少女', clerk: '店員' };
 
 const PALETTES = {
   hero: { body: '#7ed9b8', body2: '#4fb596', hat: '#ffd36b', hair: '#6b4535', skin: '#ffe0c4', scarf: '#ff8f7a' },
@@ -318,5 +352,6 @@ const PALETTES = {
   goro: { body: '#8d7a62', body2: '#6d5a44', hat: '#37323f', hair: '#e8e8f0', skin: '#e8c9a8', scarf: '#d9c27a' },
   fisher: { body: '#6f8f8a', body2: '#4f6f6a', hat: '#c9b27a', hair: '#8a8a94', skin: '#e8c9a8', scarf: '#c9b27a' },
   teacher: { body: '#b79d8a', body2: '#977d6a', hat: '#d9c9a8', hair: '#e8e8f0', skin: '#f6d9bf', scarf: '#8a6fd0' },
+  keeper: { body: '#5f7068', body2: '#45544e', hat: '#34323a', hair: '#e8e6e4', skin: '#e8c9a8', scarf: '#8a7a5a' },
   rival: { body: '#a38cff', body2: '#7f68e0', hat: '#ff6b8a', hair: '#2a2438', skin: '#ffe0c4', scarf: '#ffd36b' },
 };

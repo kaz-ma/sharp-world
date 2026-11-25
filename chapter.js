@@ -1,6 +1,6 @@
 'use strict';
 // 章の扉絵: 旅の はじまり(序章)と、町に はじめて 着いたとき。絵は assets/ch<番号>_bg/fg/tx.webp(作り方は brand/)
-const CHAPTERS = { village: 0, town: 1, town2: 2, town3: 3 };
+const CHAPTERS = { village: 0, town: 1, town2: 2, town3: 3, town4: 4 };
 const chapterArt = {};
 function loadChapter(i) {
   if (!chapterArt[i]) {
@@ -48,6 +48,6 @@ async function chapterOnArrive(id) {
 // おためし(?chapter=all か 0〜3): 扉絵だけ 見る。セーブは 書きかえない
 async function chapterPreview(which) {
   preview = true; await fade(1, 0.3, '#0d0b1c'); mode = 'field';
-  for (const i of which === 'all' ? [0, 1, 2, 3] : [+which]) await showChapter(i);
+  for (const i of which === 'all' ? [0, 1, 2, 3, 4] : [+which]) await showChapter(i);
   location.href = location.pathname;
 }
