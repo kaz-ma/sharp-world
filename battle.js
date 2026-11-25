@@ -46,13 +46,14 @@ const markSeen = (sp) => { S.seen[sp] = true; };
 let bt = null;
 const ss = () => ({ ox: 0, oy: 0, sx: 1, sy: 1, a: 1, flash: 0, vis: true, rot: 0 });
 const tmpC = document.createElement('canvas'); tmpC.width = tmpC.height = 384; const tmp = tmpC.getContext('2d');
+const WIDE_K = { kirikamome: 1.24, funenko: 1.12, sabikani: 1.1 }, FLOAT = { kirikamome: 20, hanedoron: 18, funenko: 9 }; // 飛ぶ・うかぶ 子の 高さ
 function drawMon(sp, cx, bot, size, st, seed, isShiny) {
   const spr = isShiny ? (Art.shiny(sp) || Art.sprites[sp]) : Art.sprites[sp]; if (!spr || !st.vis || st.a <= 0) return;
-  if (SPECIES[sp].from) size *= 1.14; // 進化した 子は ひとまわり 大きく
+  size *= SPECIES[sp].from ? 1.14 : WIDE_K[sp] || 1; // 進化した 子は ひとまわり、横に 広い 子は すこし 大きく
   const br = Math.sin(clock * 2.3 + seed), k = size / 192;
   g.save(); g.globalAlpha = clamp(st.a, 0, 1);
   g.fillStyle = 'rgba(40,80,30,.25)'; g.beginPath(); g.ellipse(cx + st.ox * 0.7, bot - 2, size * 0.37 * Math.max(0.2, st.sx), size * 0.065, 0, 0, 7); g.fill();
-  g.translate(cx + st.ox, bot + st.oy); g.rotate(st.rot); g.scale((1 - 0.014 * br) * st.sx, (1 + 0.024 * br) * st.sy);
+  g.translate(cx + st.ox, bot + st.oy - (FLOAT[sp] ? (FLOAT[sp] + Math.sin(clock * 2.1 + seed) * 3.5) * size / 150 : 0)); g.rotate(st.rot); g.scale((1 - 0.014 * br) * st.sx, (1 + 0.024 * br) * st.sy);
   if (st.flash > 0) {
     tmp.globalCompositeOperation = 'source-over'; tmp.clearRect(0, 0, 384, 384); tmp.drawImage(spr, 0, 0, 384, 384);
     tmp.globalCompositeOperation = 'source-atop'; tmp.fillStyle = `rgba(255,255,255,${st.flash})`; tmp.fillRect(0, 0, 384, 384); tmp.globalCompositeOperation = 'source-over';

@@ -168,7 +168,7 @@ const Art = (() => {
   };
 
   const imgs = {}, bgs = {};
-  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0 }, hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 }, himoriusagi: { tol: 30, erode: 0 }, yuuhineko: { tol: 34, erode: 0, holes: [[590, 396]] }, birisuzume: { tol: 34, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
+  const CUT = { shizukufin: { tol: 24, erode: 0 }, hinatagaeru: { tol: 30, erode: 0 }, mikanya: { tol: 34, erode: 0 }, pukurisu: { tol: 34, erode: 0 }, hotaruusagi: { tol: 34, erode: 0, soft: 0 }, kinokokko: { tol: 34, erode: 0 }, himoriusagi: { tol: 30, erode: 0 }, yuuhineko: { tol: 34, erode: 0, holes: [[590, 396]] }, birisuzume: { tol: 34, erode: 0 }, fukufukurisu: { tol: 34, erode: 0 }, kirikamome: { tol: 30, erode: 0 }, hikaritanishi: { tol: 30, erode: 0 }, hinatagama: { tol: 30, erode: 0 }, funenko: { tol: 30, erode: 0, holes: [[1016, 246], [944, 205], [1209, 420], [1167, 428], [923, 254], [1109, 317], [1139, 139], [1055, 251], [1078, 353]] }, sabikani: { tol: 34, erode: 0, holes: [[1013, 607]] }, hanedoron: { tol: 30, erode: 0 } }; // 取り込み絵ごとの背景ぬき設定
   function removeBg(src, opt = {}) { // lab.jsと同じ方法: ふちから広がる背景色だけを透明にする
     const w = src.width, h = src.height, c = cv(w, h), g = c.getContext('2d', { willReadFrequently: true });
     g.drawImage(src, 0, 0);
